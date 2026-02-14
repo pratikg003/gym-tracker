@@ -53,7 +53,7 @@ class DatabaseHelper {
       CREATE TABLE exercise_sets(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         workout_exercise_id INTEGER NOT NULL,
-        weight REAL NOT NULL,
+        weight REAL,
         reps INTEGER NOT NULL,
         rpe REAL,
         rir REAL,
