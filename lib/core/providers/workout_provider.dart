@@ -93,6 +93,42 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addMultipleExercises(List<String> exerciseNames) async {
+    if (_currentLog == null || exerciseNames.isEmpty) return;
+
+    if (_currentLog!.id != null) {
+      int id = await _repository.insertDailyLog(
+        _selectedDate,
+        _currentLog!.bodyWeight,
+      );
+      _currentLog = DailyLog(
+        id: id,
+        date: _selectedDate,
+        bodyWeight: _currentLog!.bodyWeight,
+        exercises: _currentLog!.exercises,
+      );
+    }
+
+    //loop through the selected exercises and insert them
+    for (String name in exerciseNames) {
+      int orderIndex = _currentLog!.exercises.length;
+      int exerciseId = await _repository.insertWorkoutExercise(
+        _currentLog!.id!,
+        name,
+        orderIndex,
+      );
+
+      WorkoutExercise newExercise = WorkoutExercise(
+        id: exerciseId,
+        dailyLogId: _currentLog!.id!,
+        exerciseName: name,
+        orderIndex: orderIndex,
+      );
+      _currentLog!.exercises.add(newExercise);
+    }
+    notifyListeners();
+  }
+
   // Add a set to a specific exercise
   Future<void> addSetToExercise(
     int exerciseIndex,
@@ -101,7 +137,9 @@ class WorkoutProvider with ChangeNotifier {
     double? rpe,
     double? rir,
   ) async {
-    if (_currentLog == null || exerciseIndex >= _currentLog!.exercises.length) return;
+    if (_currentLog == null || exerciseIndex >= _currentLog!.exercises.length) {
+      return;
+    }
 
     WorkoutExercise exercise = _currentLog!.exercises[exerciseIndex];
     int orderIndex = exercise.sets.length;
@@ -126,7 +164,7 @@ class WorkoutProvider with ChangeNotifier {
       orderIndex: orderIndex,
     );
     exercise.sets.add(newSet);
-    
+
     notifyListeners();
   }
 }
