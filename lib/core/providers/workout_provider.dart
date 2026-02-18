@@ -24,11 +24,14 @@ class WorkoutProvider with ChangeNotifier {
     //fetch the deeply nested tree
     DailyLog? log = await _repository.getDailyLogByDate(date);
 
-    if (log == null) {
-      _currentLog = DailyLog(date: date);
-    } else {
-      _currentLog = log;
-    }
+    // In loadLogForDate...
+  if (log == null) {
+    // OLD: _currentLog = DailyLog(date: date);
+    // NEW: Pass 'exercises: []' to make it a growable list
+    _currentLog = DailyLog(date: date, exercises: []); 
+  } else {
+    _currentLog = log;
+  }
 
     _isLoading = false;
     notifyListeners();
@@ -93,39 +96,51 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Add multiple exercises at once from the selection screen
   Future<void> addMultipleExercises(List<String> exerciseNames) async {
+    // 1. Safety Checks
     if (_currentLog == null || exerciseNames.isEmpty) return;
 
-    if (_currentLog!.id != null) {
-      int id = await _repository.insertDailyLog(
-        _selectedDate,
-        _currentLog!.bodyWeight,
-      );
+    int logId;
+
+    // 2. Ensure the Daily Log exists in the Database
+    if (_currentLog!.id == null) {
+      // If no ID, create the log first
+      logId = await _repository.insertDailyLog(_selectedDate, _currentLog!.bodyWeight);
+      
+      // Update local memory so we don't create it again next time
+      // ... inside addMultipleExercises ...
+      
+      // Update local memory so we don't create it again next time
       _currentLog = DailyLog(
-        id: id,
+        id: logId,
         date: _selectedDate,
         bodyWeight: _currentLog!.bodyWeight,
-        exercises: _currentLog!.exercises,
+        // CRITICAL FIX: Use List.from() to create a mutable copy of the existing list
+        exercises: List.from(_currentLog!.exercises), 
       );
+    } else {
+      // If ID exists, just use it
+      logId = _currentLog!.id!;
     }
 
-    //loop through the selected exercises and insert them
+    // 3. Loop through exercises using the guaranteed logId
     for (String name in exerciseNames) {
       int orderIndex = _currentLog!.exercises.length;
-      int exerciseId = await _repository.insertWorkoutExercise(
-        _currentLog!.id!,
-        name,
-        orderIndex,
-      );
-
+      
+      // Use the local 'logId' variable here, which is guaranteed to not be null
+      int exerciseId = await _repository.insertWorkoutExercise(logId, name, orderIndex);
+      
       WorkoutExercise newExercise = WorkoutExercise(
-        id: exerciseId,
-        dailyLogId: _currentLog!.id!,
-        exerciseName: name,
-        orderIndex: orderIndex,
+        id: exerciseId, 
+        dailyLogId: logId, 
+        exerciseName: name, 
+        orderIndex: orderIndex
       );
+      
       _currentLog!.exercises.add(newExercise);
     }
+    
     notifyListeners();
   }
 

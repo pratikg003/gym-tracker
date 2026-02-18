@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gym_tracker/ui/screens/exercise_detail_screen.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/workout_provider.dart';
 import 'exercise_selection_screen.dart';
@@ -32,11 +33,8 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gym Tracker'),
-        centerTitle: true,
-      ),
-      
+      appBar: AppBar(title: const Text('Gym Tracker'), centerTitle: true),
+
       // FLOATING ACTION BUTTON - Navigates to the multi-select screen
       floatingActionButton: Consumer<WorkoutProvider>(
         builder: (context, provider, child) {
@@ -82,41 +80,65 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Date:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      "Date:",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     TextButton(
                       onPressed: () async {
                         DateTime? picked = await showDatePicker(
                           context: context,
                           initialDate: DateTime.parse(provider.selectedDate),
                           firstDate: DateTime(2020),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
                         );
                         if (picked != null) {
-                          provider.loadLogForDate(picked.toString().split(' ')[0]);
+                          provider.loadLogForDate(
+                            picked.toString().split(' ')[0],
+                          );
                         }
                       },
                       child: Text(
-                        provider.selectedDate, 
-                        style: const TextStyle(fontSize: 18, color: Colors.blue),
+                        provider.selectedDate,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.blue,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const Divider(height: 32),
-                
+
                 // --- 2. BODYWEIGHT INPUT ---
                 Row(
                   children: [
-                    const Text("Bodyweight (kg):", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      "Bodyweight (kg):",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: TextField(
                         controller: _weightController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
                           hintText: 'e.g., 66.5',
                           border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
                         // Saves the weight to SQLite when you hit 'Done' on the keyboard
                         onSubmitted: (value) {
@@ -124,7 +146,9 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                           if (weight != null) {
                             provider.logBodyWeight(weight);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Bodyweight saved!')),
+                              const SnackBar(
+                                content: Text('Bodyweight saved!'),
+                              ),
                             );
                           }
                         },
@@ -132,27 +156,53 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
-                const Text("Exercises", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const Text(
+                  "Exercises",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 16),
 
                 // --- 3. EXERCISE LIST ---
                 Expanded(
                   child: provider.currentLog?.exercises.isEmpty ?? true
-                      ? const Center(child: Text("No exercises added yet. Tap + to start."))
+                      ? const Center(
+                          child: Text(
+                            "No exercises added yet. Tap + to start.",
+                          ),
+                        )
                       : ListView.builder(
                           itemCount: provider.currentLog!.exercises.length,
                           itemBuilder: (context, index) {
-                            final exercise = provider.currentLog!.exercises[index];
+                            final exercise =
+                                provider.currentLog!.exercises[index];
                             return Card(
                               child: ListTile(
-                                title: Text(exercise.exerciseName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text("${exercise.sets.length} sets logged"),
-                                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                                title: Text(
+                                  exercise.exerciseName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  "${exercise.sets.length} sets logged",
+                                ),
+                                trailing: const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 16,
+                                ),
                                 onTap: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Opening ${exercise.exerciseName} sets... (Coming Day 63)')),
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ExerciseDetailScreen(
+                                        exerciseIndex:
+                                            index, // Pass the index, not the object!
+                                        exerciseName: exercise
+                                            .exerciseName, // Pass name for the AppBar
+                                      ),
+                                    ),
                                   );
                                 },
                               ),
