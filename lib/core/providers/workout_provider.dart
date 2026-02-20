@@ -25,13 +25,13 @@ class WorkoutProvider with ChangeNotifier {
     DailyLog? log = await _repository.getDailyLogByDate(date);
 
     // In loadLogForDate...
-  if (log == null) {
-    // OLD: _currentLog = DailyLog(date: date);
-    // NEW: Pass 'exercises: []' to make it a growable list
-    _currentLog = DailyLog(date: date, exercises: []); 
-  } else {
-    _currentLog = log;
-  }
+    if (log == null) {
+      // OLD: _currentLog = DailyLog(date: date);
+      // NEW: Pass 'exercises: []' to make it a growable list
+      _currentLog = DailyLog(date: date, exercises: []);
+    } else {
+      _currentLog = log;
+    }
 
     _isLoading = false;
     notifyListeners();
@@ -91,8 +91,9 @@ class WorkoutProvider with ChangeNotifier {
       dailyLogId: _currentLog!.id!,
       exerciseName: exerciseName,
       orderIndex: orderIndex,
+      sets: [],
     );
-    currentLog!.exercises.add(newExercise);
+    _currentLog!.exercises.add(newExercise);
     notifyListeners();
   }
 
@@ -106,18 +107,16 @@ class WorkoutProvider with ChangeNotifier {
     // 2. Ensure the Daily Log exists in the Database
     if (_currentLog!.id == null) {
       // If no ID, create the log first
-      logId = await _repository.insertDailyLog(_selectedDate, _currentLog!.bodyWeight);
-      
-      // Update local memory so we don't create it again next time
-      // ... inside addMultipleExercises ...
-      
-      // Update local memory so we don't create it again next time
+      logId = await _repository.insertDailyLog(
+        _selectedDate,
+        _currentLog!.bodyWeight,
+      );
+
       _currentLog = DailyLog(
         id: logId,
         date: _selectedDate,
         bodyWeight: _currentLog!.bodyWeight,
-        // CRITICAL FIX: Use List.from() to create a mutable copy of the existing list
-        exercises: List.from(_currentLog!.exercises), 
+        exercises: List.from(_currentLog!.exercises),
       );
     } else {
       // If ID exists, just use it
@@ -127,20 +126,25 @@ class WorkoutProvider with ChangeNotifier {
     // 3. Loop through exercises using the guaranteed logId
     for (String name in exerciseNames) {
       int orderIndex = _currentLog!.exercises.length;
-      
+
       // Use the local 'logId' variable here, which is guaranteed to not be null
-      int exerciseId = await _repository.insertWorkoutExercise(logId, name, orderIndex);
-      
-      WorkoutExercise newExercise = WorkoutExercise(
-        id: exerciseId, 
-        dailyLogId: logId, 
-        exerciseName: name, 
-        orderIndex: orderIndex
+      int exerciseId = await _repository.insertWorkoutExercise(
+        logId,
+        name,
+        orderIndex,
       );
-      
+
+      WorkoutExercise newExercise = WorkoutExercise(
+        id: exerciseId,
+        dailyLogId: logId,
+        exerciseName: name,
+        orderIndex: orderIndex,
+        sets: [],
+      );
+
       _currentLog!.exercises.add(newExercise);
     }
-    
+
     notifyListeners();
   }
 
@@ -179,6 +183,39 @@ class WorkoutProvider with ChangeNotifier {
       orderIndex: orderIndex,
     );
     exercise.sets.add(newSet);
+
+    notifyListeners();
+  }
+
+  Future<void> updateSet(
+    int exerciseIndex,
+    int setIndex,
+    double? weight,
+    int reps,
+    double? rpe,
+    double? rir,
+  ) async {
+    if (_currentLog == null) return;
+
+    WorkoutExercise exercise = _currentLog!.exercises[exerciseIndex];
+    ExerciseSet currentSet = exercise.sets[setIndex];
+
+    // Create the updated set object
+    ExerciseSet updatedSet = ExerciseSet(
+      id: currentSet.id,
+      workoutExerciseId: currentSet.workoutExerciseId,
+      weight: weight,
+      reps: reps,
+      rpe: rpe,
+      rir: rir,
+      orderIndex: currentSet.orderIndex,
+    );
+
+    // Update Local Memory
+    exercise.sets[setIndex] = updatedSet;
+
+    // Update Database
+    await _repository.updateExerciseSet(updatedSet);
 
     notifyListeners();
   }
