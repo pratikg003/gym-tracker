@@ -219,4 +219,51 @@ class WorkoutProvider with ChangeNotifier {
 
     notifyListeners();
   }
+
+  //delete exercise
+  Future<void> deleteExercise(int exerciseIndex) async {
+    if (_currentLog == null) return;
+
+    WorkoutExercise exercise = _currentLog!.exercises[exerciseIndex];
+
+    //remove from DB
+    if (exercise.id != null) {
+      await _repository.deleteWorkoutExercise(exercise.id!);
+    }
+
+    //remove from memory
+    _currentLog!.exercises.removeAt(exerciseIndex);
+    notifyListeners();
+  }
+
+  Future<void> deleteSet(int exerciseIndex, int setIndex) async {
+    if (_currentLog == null) return;
+
+    WorkoutExercise exercise = _currentLog!.exercises[exerciseIndex];
+    ExerciseSet set = exercise.sets[setIndex];
+
+    //remove from DB
+    if (set.id != null) {
+      await _repository.deleteExerciseSet(set.id!);
+    }
+
+    //remove from memory
+    exercise.sets.removeAt(setIndex);
+
+    // Re-index remaining sets to keep the order correct
+    for (int i = 0; i < exercise.sets.length; i++) {
+      exercise.sets[i] = ExerciseSet(
+        id: exercise.sets[i].id,
+        workoutExerciseId: exercise.sets[i].workoutExerciseId,
+        weight: exercise.sets[i].weight,
+        reps: exercise.sets[i].reps,
+        rpe: exercise.sets[i].rpe,
+        rir: exercise.sets[i].rir,
+        orderIndex: i, // Update the index
+      );
+      await _repository.updateExerciseSet(exercise.sets[i]);
+    }
+
+    notifyListeners();
+  }
 }

@@ -177,34 +177,57 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                           itemBuilder: (context, index) {
                             final exercise =
                                 provider.currentLog!.exercises[index];
-                            return Card(
-                              child: ListTile(
-                                title: Text(
-                                  exercise.exerciseName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                            return Dismissible(
+                              key: ValueKey(exercise.id ?? UniqueKey()),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                color: Colors.red,
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 20),
+                                child: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
                                 ),
-                                subtitle: Text(
-                                  "${exercise.sets.length} sets logged",
-                                ),
-                                trailing: const Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 16,
-                                ),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ExerciseDetailScreen(
-                                        exerciseIndex:
-                                            index, // Pass the index, not the object!
-                                        exerciseName: exercise
-                                            .exerciseName, // Pass name for the AppBar
-                                      ),
+                              ),
+                              onDismissed: (direction) {
+                                provider.deleteExercise(index);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '${exercise.exerciseName} deleted!',
                                     ),
-                                  );
-                                },
+                                  ),
+                                );
+                              },
+                              child: Card(
+                                child: ListTile(
+                                  title: Text(
+                                    exercise.exerciseName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    "${exercise.sets.length} sets logged",
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.arrow_forward_ios,
+                                    size: 16,
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ExerciseDetailScreen(
+                                          exerciseIndex:
+                                              index, // Pass the index, not the object!
+                                          exerciseName: exercise
+                                              .exerciseName, // Pass name for the AppBar
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             );
                           },

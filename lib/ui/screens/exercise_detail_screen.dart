@@ -80,10 +80,23 @@ class ExerciseDetailScreen extends StatelessWidget {
                   itemCount: exercise.sets.length,
                   itemBuilder: (context, index) {
                     final set = exercise.sets[index];
-                    return _SetRow(
-                      set: set,
-                      setIndex: index,
-                      exerciseIndex: exerciseIndex,
+                    return Dismissible(
+                      key: ValueKey(set.id ?? UniqueKey()),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20.0),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      onDismissed: (direction) {
+                        provider.deleteSet(exerciseIndex, index);
+                      },
+                      child: _SetRow(
+                        set: set,
+                        setIndex: index,
+                        exerciseIndex: exerciseIndex,
+                      ),
                     );
                   },
                 ),
