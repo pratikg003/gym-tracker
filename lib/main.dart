@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/core/database/database_helper.dart';
+import 'package:gym_tracker/core/providers/timer_provider.dart';
 import 'package:gym_tracker/core/providers/workout_provider.dart';
 import 'package:gym_tracker/ui/screens/daily_log_screen.dart';
 import 'package:provider/provider.dart';
@@ -9,8 +10,11 @@ void main() async {
   await DatabaseHelper.instance.database;
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => WorkoutProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (Context) => WorkoutProvider()),
+        ChangeNotifierProvider(create: (context) => TimerProvider()),
+      ],
       child: const MyApp(),
     ),
   );

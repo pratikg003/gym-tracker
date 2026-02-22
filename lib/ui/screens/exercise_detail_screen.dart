@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/core/models/exercise_set.dart';
 import 'package:gym_tracker/core/models/workout_exercise.dart';
+import 'package:gym_tracker/core/providers/timer_provider.dart';
 import 'package:gym_tracker/core/providers/workout_provider.dart';
+import 'package:gym_tracker/ui/widgets/rest_timer_banner.dart';
 import 'package:provider/provider.dart';
 
 class ExerciseDetailScreen extends StatelessWidget {
@@ -103,30 +105,48 @@ class ExerciseDetailScreen extends StatelessWidget {
               ),
               Padding(
                 padding: EdgeInsets.all(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      provider.addSetToExercise(
-                        exerciseIndex,
-                        null,
-                        0,
-                        null,
-                        null,
-                      );
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Set'),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          provider.addSetToExercise(
+                            exerciseIndex,
+                            null,
+                            0,
+                            null,
+                            null,
+                          );
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Set'),
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
                     ),
-                  ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          // Starts a 90-second rest timer
+                          context.read<TimerProvider>().startTimer(90);
+                        },
+                        icon: const Icon(Icons.timer),
+                        label: const Text("90s Rest"),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           );
         },
       ),
+      bottomNavigationBar: const RestTimerBanner(),
     );
   }
 }
