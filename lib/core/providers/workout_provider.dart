@@ -15,6 +15,9 @@ class WorkoutProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String get selectedDate => _selectedDate;
 
+  WorkoutExercise? _lastPerformance;
+  WorkoutExercise? get lastPerformance => _lastPerformance;
+
   //load a day's workout from SQLite into memory
   Future<void> loadLogForDate(String date) async {
     _isLoading = true;
@@ -264,6 +267,20 @@ class WorkoutProvider with ChangeNotifier {
       await _repository.updateExerciseSet(exercise.sets[i]);
     }
 
+    notifyListeners();
+  }
+
+  Future<void> loadExerciseHistory(String exerciseName) async {
+    _lastPerformance = null; // Reset first to avoid showing wrong data
+    // notifyListeners(); // Optional: uncomment if you want to show a loading spinner
+
+    // Fetch from Repo
+    WorkoutExercise? history = await _repository.getLastExercisePerformance(
+      exerciseName,
+      _selectedDate,
+    );
+
+    _lastPerformance = history;
     notifyListeners();
   }
 }

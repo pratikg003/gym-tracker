@@ -3,10 +3,11 @@ import 'package:gym_tracker/core/models/exercise_set.dart';
 import 'package:gym_tracker/core/models/workout_exercise.dart';
 import 'package:gym_tracker/core/providers/timer_provider.dart';
 import 'package:gym_tracker/core/providers/workout_provider.dart';
+import 'package:gym_tracker/ui/widgets/history_card.dart';
 import 'package:gym_tracker/ui/widgets/rest_timer_banner.dart';
 import 'package:provider/provider.dart';
 
-class ExerciseDetailScreen extends StatelessWidget {
+class ExerciseDetailScreen extends StatefulWidget {
   final int exerciseIndex;
   final String exerciseName;
 
@@ -17,19 +18,38 @@ class ExerciseDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<ExerciseDetailScreen> createState() => _ExerciseDetailScreenState();
+}
+
+class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch history as soon as the screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WorkoutProvider>().loadExerciseHistory(widget.exerciseName);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(exerciseName), centerTitle: true),
+      appBar: AppBar(title: Text(widget.exerciseName), centerTitle: true),
       body: Consumer<WorkoutProvider>(
         builder: (context, provider, child) {
           if (provider.currentLog == null ||
-              exerciseIndex >= provider.currentLog!.exercises.length) {
+              widget.exerciseIndex >= provider.currentLog!.exercises.length) {
             return const Text('Error loading exercise');
           }
           final WorkoutExercise exercise =
-              provider.currentLog!.exercises[exerciseIndex];
+              provider.currentLog!.exercises[widget.exerciseIndex];
           return Column(
             children: [
+              Consumer<WorkoutProvider>(
+                builder: (context, provider, _) {
+                  return HistoryCard(history: provider.lastPerformance);
+                },
+              ),
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 child: Row(
@@ -92,12 +112,12 @@ class ExerciseDetailScreen extends StatelessWidget {
                         child: const Icon(Icons.delete, color: Colors.white),
                       ),
                       onDismissed: (direction) {
-                        provider.deleteSet(exerciseIndex, index);
+                        provider.deleteSet(widget.exerciseIndex, index);
                       },
                       child: _SetRow(
                         set: set,
                         setIndex: index,
-                        exerciseIndex: exerciseIndex,
+                        exerciseIndex: widget.exerciseIndex,
                       ),
                     );
                   },
@@ -111,7 +131,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           provider.addSetToExercise(
-                            exerciseIndex,
+                            widget.exerciseIndex,
                             null,
                             0,
                             null,

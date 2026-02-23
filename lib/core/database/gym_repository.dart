@@ -153,4 +153,52 @@ class GymRepository {
     Database db = await _dbHelper.database;
     return await db.delete('exercise_sets', where: 'id = ?', whereArgs: [id]);
   }
+
+  // Fetch the last time this exercise was performed (excluding today)
+  Future<WorkoutExercise?> getLastExercisePerformance(String exerciseName, String currentDate) async {
+    final db = await _dbHelper.database;
+
+    // 1. Find the most recent previous exercise entry
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT we.* FROM workout_exercises we
+      INNER JOIN daily_logs dl ON we.daily_log_id = dl.id
+      WHERE we.exercise_name = ? AND dl.date < ?
+      ORDER BY dl.date DESC
+      LIMIT 1
+    ''', [exerciseName, currentDate]);
+
+    if (maps.isEmpty) return null;
+
+    // 2. Convert to object
+    WorkoutExercise exercise = WorkoutExercise(
+      id: maps[0]['id'],
+      dailyLogId: maps[0]['daily_log_id'],
+      exerciseName: maps[0]['exercise_name'],
+      orderIndex: maps[0]['order_index'],
+      sets: [], // We will fill this next
+    );
+
+    // 3. Fetch the sets for that specific past exercise
+    final List<Map<String, dynamic>> setMaps = await db.query(
+      'exercise_sets',
+      where: 'workout_exercise_id = ?',
+      whereArgs: [exercise.id],
+      orderBy: 'order_index ASC',
+    );
+
+    // 4. Attach sets to the exercise
+    for (var map in setMaps) {
+      exercise.sets.add(ExerciseSet(
+        id: map['id'],
+        workoutExerciseId: map['workout_exercise_id'],
+        weight: map['weight'],
+        reps: map['reps'],
+        rpe: map['rpe'],
+        rir: map['rir'],
+        orderIndex: map['order_index'],
+      ));
+    }
+
+    return exercise;
+  }
 }
