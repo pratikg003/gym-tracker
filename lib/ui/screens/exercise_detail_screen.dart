@@ -3,6 +3,7 @@ import 'package:gym_tracker/core/models/exercise_set.dart';
 import 'package:gym_tracker/core/models/workout_exercise.dart';
 import 'package:gym_tracker/core/providers/timer_provider.dart';
 import 'package:gym_tracker/core/providers/workout_provider.dart';
+import 'package:gym_tracker/core/utils/one_rep_max.dart';
 import 'package:gym_tracker/ui/widgets/history_card.dart';
 import 'package:gym_tracker/ui/widgets/rest_timer_banner.dart';
 import 'package:provider/provider.dart';
@@ -199,6 +200,17 @@ class _SetRowState extends State<_SetRow> {
   final FocusNode _rpeFocus = FocusNode();
   final FocusNode _rirFocus = FocusNode();
 
+  String get _estimated1RM {
+    double? weight = double.tryParse(_weightController.text);
+    int? reps = int.tryParse(_repsController.text);
+
+    if (weight == null || reps == null || weight == 0 || reps == 0) {
+      return "-";
+    }
+
+    return "${OneRepMax.calculate(weight, reps)}kg";
+  }
+
   @override
   void initState() {
     super.initState();
@@ -215,6 +227,9 @@ class _SetRowState extends State<_SetRow> {
     _rirController = TextEditingController(
       text: widget.set.rir?.toString() ?? '',
     );
+
+    _weightController.addListener(() => setState(() {}));
+    _repsController.addListener(() => setState(() {}));
 
     // Add listeners to save data when the user taps outside the text field
     _weightFocus.addListener(_onFocusChange);
@@ -298,16 +313,28 @@ class _SetRowState extends State<_SetRow> {
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 30,
-            child: CircleAvatar(
-              radius: 12,
-              backgroundColor: Colors.blue.shade100,
-              child: Text(
-                "${widget.setIndex + 1}",
-                style: const TextStyle(fontSize: 12, color: Colors.black),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: Colors.blue.shade100,
+                child: Text(
+                  "${widget.setIndex + 1}",
+                  style: const TextStyle(fontSize: 12, color: Colors.black),
+                ),
               ),
-            ),
+              const SizedBox(height: 4),
+              // THE NEW 1RM DISPLAY
+              Text(
+                _estimated1RM,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 8),
           _buildTextField(_weightController, _weightFocus, "-"),
