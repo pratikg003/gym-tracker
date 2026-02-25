@@ -28,7 +28,9 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     super.initState();
     // Fetch history as soon as the screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WorkoutProvider>().loadExerciseHistory(widget.exerciseName);
+      final provider = context.read<WorkoutProvider>();
+      provider.loadExerciseHistory(widget.exerciseName);
+      provider.loadPersonalRecord(widget.exerciseName);
     });
   }
 
@@ -119,6 +121,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                         set: set,
                         setIndex: index,
                         exerciseIndex: widget.exerciseIndex,
+                        existingPR: provider.currentPR,
                       ),
                     );
                   },
@@ -177,11 +180,13 @@ class _SetRow extends StatefulWidget {
   final ExerciseSet set;
   final int setIndex; // The actual index in the list (0, 1, 2...)
   final int exerciseIndex; // Which exercise this set belongs to
+  final double existingPR;
 
   const _SetRow({
     required this.set,
     required this.setIndex,
     required this.exerciseIndex,
+    required this.existingPR,
   });
 
   @override
@@ -199,17 +204,6 @@ class _SetRowState extends State<_SetRow> {
   final FocusNode _repsFocus = FocusNode();
   final FocusNode _rpeFocus = FocusNode();
   final FocusNode _rirFocus = FocusNode();
-
-  String get _estimated1RM {
-    double? weight = double.tryParse(_weightController.text);
-    int? reps = int.tryParse(_repsController.text);
-
-    if (weight == null || reps == null || weight == 0 || reps == 0) {
-      return "-";
-    }
-
-    return "${OneRepMax.calculate(weight, reps)}kg";
-  }
 
   @override
   void initState() {
@@ -306,6 +300,16 @@ class _SetRowState extends State<_SetRow> {
 
   @override
   Widget build(BuildContext context) {
+    double current1RM = 0.0;
+    double? weight = double.tryParse(_weightController.text);
+    int? reps = int.tryParse(_repsController.text);
+
+    if (weight != null && reps != null) {
+      current1RM = OneRepMax.calculate(weight, reps);
+    }
+
+    bool isPR = current1RM > widget.existingPR && widget.existingPR > 0;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       decoration: BoxDecoration(
@@ -318,20 +322,29 @@ class _SetRowState extends State<_SetRow> {
             children: [
               CircleAvatar(
                 radius: 12,
-                backgroundColor: Colors.blue.shade100,
-                child: Text(
-                  "${widget.setIndex + 1}",
-                  style: const TextStyle(fontSize: 12, color: Colors.black),
-                ),
+                backgroundColor: isPR ? Colors.amber : Colors.blue.shade100,
+                child: isPR
+                    ? const Icon(
+                        Icons.emoji_events,
+                        size: 14,
+                        color: Colors.white,
+                      )
+                    : Text(
+                        "${widget.setIndex + 1}",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black,
+                        ),
+                      ),
               ),
               const SizedBox(height: 4),
-              // THE NEW 1RM DISPLAY
               Text(
-                _estimated1RM,
+                "${current1RM}kg", // Show raw number
                 style: TextStyle(
                   fontSize: 10,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.bold,
+                  // If PR, make text BOLD and AMBER
+                  color: isPR ? Colors.amber.shade800 : Colors.grey.shade600,
+                  fontWeight: isPR ? FontWeight.w900 : FontWeight.bold,
                 ),
               ),
             ],

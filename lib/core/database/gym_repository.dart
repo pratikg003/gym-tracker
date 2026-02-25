@@ -201,4 +201,22 @@ class GymRepository {
 
     return exercise;
   }
+
+  // Calculate the All-Time Best 1RM for an exercise
+  Future<double> getOneRepMaxPR(String exerciseName) async {
+    final db = await _dbHelper.database;
+
+    // Formula: Weight * (1 + Reps/30)
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+      SELECT MAX(es.weight * (1 + es.reps / 30.0)) as max_1rm
+      FROM exercise_sets es
+      INNER JOIN workout_exercises we ON es.workout_exercise_id = we.id
+      WHERE we.exercise_name = ?
+    ''', [exerciseName]);
+
+    if (result.isNotEmpty && result[0]['max_1rm'] != null) {
+      return result[0]['max_1rm'];
+    }
+    return 0.0;
+  }
 }

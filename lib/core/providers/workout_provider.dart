@@ -18,6 +18,9 @@ class WorkoutProvider with ChangeNotifier {
   WorkoutExercise? _lastPerformance;
   WorkoutExercise? get lastPerformance => _lastPerformance;
 
+  double _currentPR = 0.0;
+  double get currentPR => _currentPR;
+
   //load a day's workout from SQLite into memory
   Future<void> loadLogForDate(String date) async {
     _isLoading = true;
@@ -281,6 +284,11 @@ class WorkoutProvider with ChangeNotifier {
     );
 
     _lastPerformance = history;
+    notifyListeners();
+  }
+
+  Future<void> loadPersonalRecord(String exerciseName) async {
+    _currentPR = await _repository.getOneRepMaxPR(exerciseName);
     notifyListeners();
   }
 }
