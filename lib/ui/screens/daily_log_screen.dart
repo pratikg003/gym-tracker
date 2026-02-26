@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/ui/screens/exercise_detail_screen.dart';
+import 'package:gym_tracker/ui/widgets/weight_chart.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/workout_provider.dart';
 import 'exercise_selection_screen.dart';
@@ -76,6 +77,8 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const WeightChart(),
+                const SizedBox(height: 24),
                 // --- 1. DATE SELECTOR ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

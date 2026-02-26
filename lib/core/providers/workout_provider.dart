@@ -21,6 +21,9 @@ class WorkoutProvider with ChangeNotifier {
   double _currentPR = 0.0;
   double get currentPR => _currentPR;
 
+  List<Map<String, dynamic>> _weightHistory = [];
+  List<Map<String, dynamic>> get weightHistory => _weightHistory;
+
   //load a day's workout from SQLite into memory
   Future<void> loadLogForDate(String date) async {
     _isLoading = true;
@@ -289,6 +292,11 @@ class WorkoutProvider with ChangeNotifier {
 
   Future<void> loadPersonalRecord(String exerciseName) async {
     _currentPR = await _repository.getOneRepMaxPR(exerciseName);
+    notifyListeners();
+  }
+
+  Future<void> loadWeightHistory() async {
+    _weightHistory = await _repository.getBodyWeightHistory();
     notifyListeners();
   }
 }

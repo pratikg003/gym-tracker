@@ -219,4 +219,15 @@ class GymRepository {
     }
     return 0.0;
   }
+
+  // Fetch bodyweight history
+  Future<List<Map<String, dynamic>>> getBodyWeightHistory() async {
+    final db = await _dbHelper.database;
+    return await db.rawQuery('''
+      SELECT date, body_weight 
+      FROM daily_logs 
+      WHERE body_weight IS NOT NULL AND body_weight > 0
+      ORDER BY date ASC
+    ''');
+  }
 }

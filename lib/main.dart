@@ -12,7 +12,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (Context) => WorkoutProvider()),
+        ChangeNotifierProvider(create: (context) => WorkoutProvider()),
         ChangeNotifierProvider(create: (context) => TimerProvider()),
       ],
       child: const MyApp(),
