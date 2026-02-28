@@ -74,6 +74,11 @@ class WorkoutProvider with ChangeNotifier {
   Future<void> addExercise(String exerciseName) async {
     if (_currentLog == null) return;
 
+    bool alreadyExists = _currentLog!.exercises.any(
+      (ex) => ex.exerciseName == exerciseName,
+    );
+    if (alreadyExists) return; // Exit early if it's already there
+
     if (_currentLog!.id == null) {
       int id = await _repository.insertDailyLog(
         _selectedDate,
@@ -134,9 +139,13 @@ class WorkoutProvider with ChangeNotifier {
 
     // 3. Loop through exercises using the guaranteed logId
     for (String name in exerciseNames) {
+      bool alreadyExists = _currentLog!.exercises.any(
+        (ex) => ex.exerciseName == name,
+      );
+      if (alreadyExists) continue; // Skip to the next exercise
+
       int orderIndex = _currentLog!.exercises.length;
 
-      // Use the local 'logId' variable here, which is guaranteed to not be null
       int exerciseId = await _repository.insertWorkoutExercise(
         logId,
         name,

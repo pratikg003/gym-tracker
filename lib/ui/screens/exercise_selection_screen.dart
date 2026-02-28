@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gym_tracker/core/providers/workout_provider.dart';
+import 'package:provider/provider.dart';
 
 class ExerciseSelectionScreen extends StatefulWidget {
   const ExerciseSelectionScreen({super.key});
@@ -26,6 +28,8 @@ class _ExerciseSelectionScreenState extends State<ExerciseSelectionScreen> {
   final Set<String> _selectedExercises = {};
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<WorkoutProvider>();
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Select Exercises"),
@@ -51,18 +55,49 @@ class _ExerciseSelectionScreenState extends State<ExerciseSelectionScreen> {
             ),
             initiallyExpanded: index == 0, // Expand the first one by default
             children: exercises.map((exercise) {
+              // 1. Check if the exercise is already in today's log
+              bool alreadyAdded =
+                  provider.currentLog?.exercises.any(
+                    (ex) => ex.exerciseName == exercise,
+                  ) ??
+                  false;
+
               return CheckboxListTile(
-                title: Text(exercise),
-                value: _selectedExercises.contains(exercise),
-                onChanged: (bool? selected) {
-                  setState(() {
-                    if (selected == true) {
-                      _selectedExercises.add(exercise);
-                    } else {
-                      _selectedExercises.remove(exercise);
-                    }
-                  });
-                },
+                title: Text(
+                  exercise,
+                  style: TextStyle(
+                    color: alreadyAdded
+                        ? Colors.grey
+                        : Colors.black, // Grey out text
+                    fontWeight: alreadyAdded
+                        ? FontWeight.normal
+                        : FontWeight.w500,
+                  ),
+                ),
+                subtitle: alreadyAdded
+                    ? const Text(
+                        "Already in today's workout",
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      )
+                    : null,
+
+                // 2. Force true if already added, else check local list
+                value: alreadyAdded
+                    ? true
+                    : _selectedExercises.contains(exercise),
+
+                // 3. Set to null to disable the checkbox completely
+                onChanged: alreadyAdded
+                    ? null
+                    : (bool? selected) {
+                        setState(() {
+                          if (selected == true) {
+                            _selectedExercises.add(exercise);
+                          } else {
+                            _selectedExercises.remove(exercise);
+                          }
+                        });
+                      },
               );
             }).toList(),
           );
