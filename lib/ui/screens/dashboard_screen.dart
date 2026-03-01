@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gym_tracker/ui/widgets/progression_chart.dart';
 import '../widgets/weight_chart.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -14,7 +15,8 @@ class DashboardScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             WeightChart(),
-            // We will add 1RM progression charts here later
+            SizedBox(height: 24,),
+            ProgressionChart(),
           ],
         ),
       ),

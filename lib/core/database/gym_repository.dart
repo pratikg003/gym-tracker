@@ -230,4 +230,18 @@ class GymRepository {
       ORDER BY date ASC
     ''');
   }
+
+  // Fetch 1RM progression history for a specific exercise
+  Future<List<Map<String, dynamic>>> getExerciseProgression(String exerciseName) async {
+    final db = await _dbHelper.database;
+    return await db.rawQuery('''
+      SELECT dl.date, MAX(es.weight * (1 + es.reps / 30.0)) as max_1rm
+      FROM exercise_sets es
+      INNER JOIN workout_exercises we ON es.workout_exercise_id = we.id
+      INNER JOIN daily_logs dl ON we.daily_log_id = dl.id
+      WHERE we.exercise_name = ? AND es.reps > 0
+      GROUP BY dl.date
+      ORDER BY dl.date ASC
+    ''', [exerciseName]);
+  }
 }

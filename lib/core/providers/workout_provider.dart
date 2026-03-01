@@ -24,6 +24,9 @@ class WorkoutProvider with ChangeNotifier {
   List<Map<String, dynamic>> _weightHistory = [];
   List<Map<String, dynamic>> get weightHistory => _weightHistory;
 
+  List<Map<String, dynamic>> _progressionHistory = [];
+  List<Map<String, dynamic>> get progressionHistory => _progressionHistory;
+
   //load a day's workout from SQLite into memory
   Future<void> loadLogForDate(String date) async {
     _isLoading = true;
@@ -306,6 +309,13 @@ class WorkoutProvider with ChangeNotifier {
 
   Future<void> loadWeightHistory() async {
     _weightHistory = await _repository.getBodyWeightHistory();
+    notifyListeners();
+  }
+
+  Future<void> loadProgressionHistory(String exerciseName) async {
+    _progressionHistory = await _repository.getExerciseProgression(
+      exerciseName,
+    );
     notifyListeners();
   }
 }
