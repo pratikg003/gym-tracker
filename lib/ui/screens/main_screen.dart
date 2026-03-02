@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gym_tracker/ui/screens/settings_screen.dart';
 import 'dashboard_screen.dart';
 import 'daily_log_screen.dart';
 
@@ -15,6 +16,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const DailyLogScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -36,6 +38,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.fitness_center),
             label: "Workout",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: "Settings",
           ),
         ],
       ),

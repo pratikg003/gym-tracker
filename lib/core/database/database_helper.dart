@@ -30,6 +30,12 @@ class DatabaseHelper {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
+  // Get the physical file path of the database
+  Future<String> getDatabasePath() async {
+    final dbPath = await getDatabasesPath();
+    return join(dbPath, _databaseName);
+  }
+
   Future _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE daily_logs(
