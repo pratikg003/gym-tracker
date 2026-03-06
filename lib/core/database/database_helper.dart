@@ -67,6 +67,25 @@ class DatabaseHelper {
         FOREIGN KEY (workout_exercise_id) REFERENCES workout_exercises (id) ON DELETE CASCADE
         )
     ''');
+
+    // 1. Table to store the name of the routine (e.g., "Push Day")
+    await db.execute('''
+      CREATE TABLE workout_templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE
+      )
+    ''');
+
+    // 2. Table to store the exercises inside that routine
+    await db.execute('''
+      CREATE TABLE template_exercises (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        template_id INTEGER NOT NULL,
+        exercise_name TEXT NOT NULL,
+        order_index INTEGER NOT NULL,
+        FOREIGN KEY (template_id) REFERENCES workout_templates (id) ON DELETE CASCADE
+      )
+    ''');
   }
 
   // Safely close the database connection

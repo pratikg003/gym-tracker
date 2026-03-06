@@ -155,17 +155,23 @@ class GymRepository {
   }
 
   // Fetch the last time this exercise was performed (excluding today)
-  Future<WorkoutExercise?> getLastExercisePerformance(String exerciseName, String currentDate) async {
+  Future<WorkoutExercise?> getLastExercisePerformance(
+    String exerciseName,
+    String currentDate,
+  ) async {
     final db = await _dbHelper.database;
 
     // 1. Find the most recent previous exercise entry
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT we.* FROM workout_exercises we
       INNER JOIN daily_logs dl ON we.daily_log_id = dl.id
       WHERE we.exercise_name = ? AND dl.date < ?
       ORDER BY dl.date DESC
       LIMIT 1
-    ''', [exerciseName, currentDate]);
+    ''',
+      [exerciseName, currentDate],
+    );
 
     if (maps.isEmpty) return null;
 
@@ -188,15 +194,17 @@ class GymRepository {
 
     // 4. Attach sets to the exercise
     for (var map in setMaps) {
-      exercise.sets.add(ExerciseSet(
-        id: map['id'],
-        workoutExerciseId: map['workout_exercise_id'],
-        weight: map['weight'],
-        reps: map['reps'],
-        rpe: map['rpe'],
-        rir: map['rir'],
-        orderIndex: map['order_index'],
-      ));
+      exercise.sets.add(
+        ExerciseSet(
+          id: map['id'],
+          workoutExerciseId: map['workout_exercise_id'],
+          weight: map['weight'],
+          reps: map['reps'],
+          rpe: map['rpe'],
+          rir: map['rir'],
+          orderIndex: map['order_index'],
+        ),
+      );
     }
 
     return exercise;
@@ -207,12 +215,15 @@ class GymRepository {
     final db = await _dbHelper.database;
 
     // Formula: Weight * (1 + Reps/30)
-    final List<Map<String, dynamic>> result = await db.rawQuery('''
+    final List<Map<String, dynamic>> result = await db.rawQuery(
+      '''
       SELECT MAX(es.weight * (1 + es.reps / 30.0)) as max_1rm
       FROM exercise_sets es
       INNER JOIN workout_exercises we ON es.workout_exercise_id = we.id
       WHERE we.exercise_name = ?
-    ''', [exerciseName]);
+    ''',
+      [exerciseName],
+    );
 
     if (result.isNotEmpty && result[0]['max_1rm'] != null) {
       return result[0]['max_1rm'];
@@ -232,9 +243,12 @@ class GymRepository {
   }
 
   // Fetch 1RM progression history for a specific exercise
-  Future<List<Map<String, dynamic>>> getExerciseProgression(String exerciseName) async {
+  Future<List<Map<String, dynamic>>> getExerciseProgression(
+    String exerciseName,
+  ) async {
     final db = await _dbHelper.database;
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT dl.date, MAX(es.weight * (1 + es.reps / 30.0)) as max_1rm
       FROM exercise_sets es
       INNER JOIN workout_exercises we ON es.workout_exercise_id = we.id
@@ -242,6 +256,64 @@ class GymRepository {
       WHERE we.exercise_name = ? AND es.reps > 0
       GROUP BY dl.date
       ORDER BY dl.date ASC
-    ''', [exerciseName]);
+    ''',
+      [exerciseName],
+    );
+  }
+
+  // --- WORKOUT TEMPLATES ---
+
+  // 1. Save a new routine
+  Future<int> createTemplate(String name, List<String> exerciseNames) async {
+    final db = await _dbHelper.database;
+    int templateId = 0;
+
+    // Run in a transaction so if one insert fails, they all roll back safely
+    await db.transaction((txn) async {
+      templateId = await txn.insert('workout_templates', {'name': name});
+
+      for (int i = 0; i < exerciseNames.length; i++) {
+        await txn.insert('template_exercises', {
+          'template_id': templateId,
+          'exercise_name': exerciseNames[i],
+          'order_index': i,
+        });
+      }
+    });
+
+    return templateId;
+  }
+
+  // 2. Fetch all saved routines
+  Future<List<Map<String, dynamic>>> getTemplates() async {
+    final db = await _dbHelper.database;
+    return await db.query('workout_templates', orderBy: 'name ASC');
+  }
+
+  // 3. Fetch the exercises inside a specific routine
+  Future<List<String>> getTemplateExercises(int templateId) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'template_exercises',
+      columns: ['exercise_name'],
+      where: 'template_id = ?',
+      whereArgs: [templateId],
+      orderBy: 'order_index ASC',
+    );
+
+    // Convert the list of maps straight into a clean List<String>
+    return maps.map((map) => map['exercise_name'] as String).toList();
+  }
+
+  // 4. Delete a routine
+  Future<void> deleteTemplate(int templateId) async {
+    final db = await _dbHelper.database;
+    // Because we used ON DELETE CASCADE in the table definition,
+    // deleting the template automatically wipes its exercises.
+    await db.delete(
+      'workout_templates',
+      where: 'id = ?',
+      whereArgs: [templateId],
+    );
   }
 }

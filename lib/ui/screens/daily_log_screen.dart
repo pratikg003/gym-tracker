@@ -33,7 +33,40 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Gym Tracker'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Workout Log'),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'save') _showSaveTemplateDialog(context);
+              if (value == 'load') _showLoadTemplateSheet(context);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'load',
+                child: Row(
+                  children: [
+                    Icon(Icons.download),
+                    SizedBox(width: 8),
+                    Text('Load Routine'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'save',
+                child: Row(
+                  children: [
+                    Icon(Icons.save),
+                    SizedBox(width: 8),
+                    Text('Save as Routine'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
 
       // FLOATING ACTION BUTTON - Navigates to the multi-select screen
       floatingActionButton: Consumer<WorkoutProvider>(
@@ -240,6 +273,117 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
           );
         },
       ),
+    );
+  }
+
+  // 1. Show Dialog to Name and Save the Routine
+  void _showSaveTemplateDialog(BuildContext context) {
+    final TextEditingController nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Save as Routine'),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'e.g., Push Day, Upper Body...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                context.read<WorkoutProvider>().saveCurrentAsTemplate(
+                  nameController.text.trim(),
+                );
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Routine "${nameController.text.trim()}" saved!',
+                    ),
+                  ),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 2. Show Bottom Sheet to Select and Load a Routine
+  void _showLoadTemplateSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Consumer<WorkoutProvider>(
+          builder: (context, provider, child) {
+            if (provider.templates.isEmpty) {
+              return const SizedBox(
+                height: 200,
+                child: Center(
+                  child: Text(
+                    "No routines saved yet.\nAdd exercises to your day and tap 'Save as Routine'.",
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    "Load Routine",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: provider.templates.length,
+                    itemBuilder: (context, index) {
+                      final template = provider.templates[index];
+                      return ListTile(
+                        leading: const Icon(Icons.list_alt, color: Colors.blue),
+                        title: Text(
+                          template['name'],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
+                          onPressed: () =>
+                              provider.removeTemplate(template['id']),
+                        ),
+                        onTap: () {
+                          provider.applyTemplate(template['id']);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

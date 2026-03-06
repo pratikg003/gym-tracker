@@ -27,6 +27,13 @@ class WorkoutProvider with ChangeNotifier {
   List<Map<String, dynamic>> _progressionHistory = [];
   List<Map<String, dynamic>> get progressionHistory => _progressionHistory;
 
+  List<Map<String, dynamic>> _templates = [];
+  List<Map<String, dynamic>> get templates => _templates;
+
+  WorkoutProvider() {
+    loadTemplates();
+  }
+
   //load a day's workout from SQLite into memory
   Future<void> loadLogForDate(String date) async {
     _isLoading = true;
@@ -38,8 +45,6 @@ class WorkoutProvider with ChangeNotifier {
 
     // In loadLogForDate...
     if (log == null) {
-      // OLD: _currentLog = DailyLog(date: date);
-      // NEW: Pass 'exercises: []' to make it a growable list
       _currentLog = DailyLog(date: date, exercises: []);
     } else {
       _currentLog = log;
@@ -317,5 +322,41 @@ class WorkoutProvider with ChangeNotifier {
       exerciseName,
     );
     notifyListeners();
+  }
+
+
+  // 1. Load all saved templates into memory
+  Future<void> loadTemplates() async {
+    _templates = await _repository.getTemplates();
+    notifyListeners();
+  }
+
+  // 2. Save the currently active workout as a new template
+  Future<void> saveCurrentAsTemplate(String templateName) async {
+    if (_currentLog == null || _currentLog!.exercises.isEmpty) return;
+
+    // Extract just the names of the exercises currently in today's log
+    List<String> exerciseNames = _currentLog!.exercises.map((e) => e.exerciseName).toList();
+
+    await _repository.createTemplate(templateName, exerciseNames);
+    await loadTemplates(); // Refresh the list so the UI updates
+  }
+
+  // 3. Apply a saved template to today's workout
+  Future<void> applyTemplate(int templateId) async {
+    if (_currentLog == null) return;
+
+    // Fetch the specific exercises for this template from SQLite
+    List<String> templateExercises = await _repository.getTemplateExercises(templateId);
+
+    // Reuse your existing method to add them all at once!
+    // (This will also trigger your duplicate prevention check automatically)
+    await addMultipleExercises(templateExercises);
+  }
+
+  // 4. Delete a template
+  Future<void> removeTemplate(int templateId) async {
+    await _repository.deleteTemplate(templateId);
+    await loadTemplates(); // Refresh the list
   }
 }
