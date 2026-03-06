@@ -68,4 +68,12 @@ class DatabaseHelper {
         )
     ''');
   }
+
+  // Safely close the database connection
+  Future<void> close() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+  }
 }
