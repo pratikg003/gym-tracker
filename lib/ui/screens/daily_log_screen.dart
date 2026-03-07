@@ -191,83 +191,122 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                     ),
                   ],
                 ),
+                const Divider(height: 32),
 
-                const SizedBox(height: 32),
-                const Text(
-                  "Exercises",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
+                // --- 3. REST DAY TOGGLE ---
+                if (provider.currentLog != null)
+                  Card(
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 8.0,
+                    ), // Removed horizontal margin to align with padding
+                    child: SwitchListTile(
+                      title: const Text(
+                        'Mark as Rest Day',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: const Text('Take a break and recover.'),
+                      secondary: const Icon(
+                        Icons.airline_seat_individual_suite,
+                        color: Colors.blue,
+                      ),
+                      value: provider.currentLog!.isRestDay,
+                      onChanged: (bool value) {
+                        provider.toggleRestDay(value);
+                      },
+                    ),
+                  ),
+
                 const SizedBox(height: 16),
 
-                // --- 3. EXERCISE LIST ---
-                Expanded(
-                  child: provider.currentLog?.exercises.isEmpty ?? true
-                      ? const Center(
-                          child: Text(
-                            "No exercises added yet. Tap + to start.",
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: provider.currentLog!.exercises.length,
-                          itemBuilder: (context, index) {
-                            final exercise =
-                                provider.currentLog!.exercises[index];
-                            return Dismissible(
-                              key: ValueKey(exercise.id ?? UniqueKey()),
-                              direction: DismissDirection.endToStart,
-                              background: Container(
-                                color: Colors.red,
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.only(right: 20),
-                                child: const Icon(
-                                  Icons.delete,
-                                  color: Colors.white,
+                // --- 4. EXERCISE LIST OR REST DAY MESSAGE ---
+                if (provider.currentLog != null &&
+                    provider.currentLog!.isRestDay)
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        "Enjoy your rest day! 🛑",
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                    ),
+                  )
+                else ...[
+                  const SizedBox(height: 32),
+                  const Text(
+                    "Exercises",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // --- 3. EXERCISE LIST ---
+                  Expanded(
+                    child: provider.currentLog?.exercises.isEmpty ?? true
+                        ? const Center(
+                            child: Text(
+                              "No exercises added yet. Tap + to start.",
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: provider.currentLog!.exercises.length,
+                            itemBuilder: (context, index) {
+                              final exercise =
+                                  provider.currentLog!.exercises[index];
+                              return Dismissible(
+                                key: ValueKey(exercise.id ?? UniqueKey()),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  color: Colors.red,
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 20),
+                                  child: const Icon(
+                                    Icons.delete,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
-                              onDismissed: (direction) {
-                                provider.deleteExercise(index);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '${exercise.exerciseName} deleted!',
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Card(
-                                child: ListTile(
-                                  title: Text(
-                                    exercise.exerciseName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    "${exercise.sets.length} sets logged",
-                                  ),
-                                  trailing: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    size: 16,
-                                  ),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ExerciseDetailScreen(
-                                          exerciseIndex:
-                                              index, // Pass the index, not the object!
-                                          exerciseName: exercise
-                                              .exerciseName, // Pass name for the AppBar
-                                        ),
+                                onDismissed: (direction) {
+                                  provider.deleteExercise(index);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${exercise.exerciseName} deleted!',
                                       ),
-                                    );
-                                  },
+                                    ),
+                                  );
+                                },
+                                child: Card(
+                                  child: ListTile(
+                                    title: Text(
+                                      exercise.exerciseName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      "${exercise.sets.length} sets logged",
+                                    ),
+                                    trailing: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 16,
+                                    ),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ExerciseDetailScreen(
+                                            exerciseIndex:
+                                                index, // Pass the index, not the object!
+                                            exerciseName: exercise
+                                                .exerciseName, // Pass name for the AppBar
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ],
             ),
           );

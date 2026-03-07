@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const _databaseName = "GymTracker.db";
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
 
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -22,8 +22,18 @@ class DatabaseHelper {
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
     );
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add the new column to the existing table without deleting data
+      await db.execute(
+        'ALTER TABLE daily_logs ADD COLUMN is_rest_day INTEGER DEFAULT 0',
+      );
+    }
   }
 
   Future _onConfigure(Database db) async {
@@ -41,6 +51,7 @@ class DatabaseHelper {
       CREATE TABLE daily_logs(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT UNIQUE NOT NULL,
+        is_rest_day INTEGER DEFAULT 0,
         body_weight REAL
         )
     ''');

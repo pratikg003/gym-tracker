@@ -324,7 +324,6 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
-
   // 1. Load all saved templates into memory
   Future<void> loadTemplates() async {
     _templates = await _repository.getTemplates();
@@ -336,7 +335,9 @@ class WorkoutProvider with ChangeNotifier {
     if (_currentLog == null || _currentLog!.exercises.isEmpty) return;
 
     // Extract just the names of the exercises currently in today's log
-    List<String> exerciseNames = _currentLog!.exercises.map((e) => e.exerciseName).toList();
+    List<String> exerciseNames = _currentLog!.exercises
+        .map((e) => e.exerciseName)
+        .toList();
 
     await _repository.createTemplate(templateName, exerciseNames);
     await loadTemplates(); // Refresh the list so the UI updates
@@ -347,7 +348,9 @@ class WorkoutProvider with ChangeNotifier {
     if (_currentLog == null) return;
 
     // Fetch the specific exercises for this template from SQLite
-    List<String> templateExercises = await _repository.getTemplateExercises(templateId);
+    List<String> templateExercises = await _repository.getTemplateExercises(
+      templateId,
+    );
 
     // Reuse your existing method to add them all at once!
     // (This will also trigger your duplicate prevention check automatically)
@@ -358,5 +361,31 @@ class WorkoutProvider with ChangeNotifier {
   Future<void> removeTemplate(int templateId) async {
     await _repository.deleteTemplate(templateId);
     await loadTemplates(); // Refresh the list
+  }
+
+  // --- REST DAY STATUS ---
+
+  Future<void> toggleRestDay(bool value) async {
+    if (_currentLog == null) return;
+
+    // 1. Update the UI state immediately so the switch flips visually
+    _currentLog!.isRestDay = value;
+    notifyListeners();
+
+    // 2. Handle SQLite saving
+    if (_currentLog!.id != null) {
+      // The row exists in the DB, just update the column
+      await _repository.updateRestDayStatus(_currentLog!.id!, value);
+    } else {
+      // The row DOES NOT exist in the DB yet.
+      // Create the blank day in the database (passing null for bodyweight).
+      int newLogId = await _repository.insertDailyLog(_currentLog!.date, null);
+
+      // Now update its rest day status using the newly created ID
+      await _repository.updateRestDayStatus(newLogId, value);
+
+      // Re-fetch the log from SQLite to sync the local memory with the new ID
+      await loadLogForDate(_currentLog!.date);
+    }
   }
 }

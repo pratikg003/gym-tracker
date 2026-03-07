@@ -316,4 +316,17 @@ class GymRepository {
       whereArgs: [templateId],
     );
   }
+
+  // --- REST DAYS ---
+
+  // Toggle the rest day status for a specific log
+  Future<void> updateRestDayStatus(int logId, bool isRestDay) async {
+    final db = await _dbHelper.database;
+    await db.update(
+      'daily_logs',
+      {'is_rest_day': isRestDay ? 1 : 0}, // SQLite doesn't have booleans, so we use 1 and 0
+      where: 'id = ?',
+      whereArgs: [logId],
+    );
+  }
 }

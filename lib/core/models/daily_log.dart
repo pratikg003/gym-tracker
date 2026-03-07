@@ -3,12 +3,14 @@ import 'package:gym_tracker/core/models/workout_exercise.dart';
 class DailyLog {
   final int? id;
   final String date;
+  bool isRestDay;
   final double? bodyWeight;
   final List<WorkoutExercise> exercises;
 
   DailyLog({
     this.id,
     required this.date,
+    this.isRestDay = false,
     this.bodyWeight,
     this.exercises = const [],
   });
