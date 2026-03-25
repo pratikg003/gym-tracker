@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gym_tracker/core/database/database_helper.dart';
 import 'package:gym_tracker/core/providers/timer_provider.dart';
 import 'package:gym_tracker/core/providers/workout_provider.dart';
@@ -46,6 +47,17 @@ class MyApp extends StatelessWidget {
         ),
 
         scaffoldBackgroundColor: const Color(0xFF121212),
+
+        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+
+        cardTheme: CardThemeData(
+          color: const Color(0xFF1E1E1E),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadiusGeometry.circular(16),
+            side: const BorderSide(color: Color(0xFF2C2C2C), width: 1),
+          ),
+        ),
 
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,

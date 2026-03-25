@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gym_tracker/ui/screens/exercise_detail_screen.dart';
+import 'package:gym_tracker/ui/widgets/exercise_card.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/workout_provider.dart';
 import 'exercise_selection_screen.dart';
@@ -241,67 +241,15 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                   Expanded(
                     child: provider.currentLog?.exercises.isEmpty ?? true
                         ? const Center(
-                            child: Text(
-                              "No exercises added yet. Tap + to start.",
-                            ),
+                            child: Text("No exercises added yet. Tap + to start."),
                           )
                         : ListView.builder(
                             itemCount: provider.currentLog!.exercises.length,
                             itemBuilder: (context, index) {
-                              final exercise =
-                                  provider.currentLog!.exercises[index];
-                              return Dismissible(
-                                key: ValueKey(exercise.id ?? UniqueKey()),
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  color: Colors.red,
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.only(right: 20),
-                                  child: const Icon(
-                                    Icons.delete,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                onDismissed: (direction) {
-                                  provider.deleteExercise(index);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '${exercise.exerciseName} deleted!',
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Card(
-                                  child: ListTile(
-                                    title: Text(
-                                      exercise.exerciseName,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      "${exercise.sets.length} sets logged",
-                                    ),
-                                    trailing: const Icon(
-                                      Icons.arrow_forward_ios,
-                                      size: 16,
-                                    ),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ExerciseDetailScreen(
-                                            exerciseIndex:
-                                                index, // Pass the index, not the object!
-                                            exerciseName: exercise
-                                                .exerciseName, // Pass name for the AppBar
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
+                              // USE YOUR NEW WIDGET HERE:
+                              return ExerciseCard(
+                                exercise: provider.currentLog!.exercises[index],
+                                exerciseIndex: index,
                               );
                             },
                           ),
