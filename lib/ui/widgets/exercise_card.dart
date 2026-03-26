@@ -140,7 +140,7 @@ class ExerciseCard extends StatelessWidget {
                       // --- WEIGHT INPUT ---
                       SizedBox(
                         width: 70,
-                        child: TextField(
+                        child: TextFormField(
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
@@ -168,6 +168,17 @@ class ExerciseCard extends StatelessWidget {
                               borderSide: BorderSide.none,
                             ),
                           ),
+                          onFieldSubmitted: (value) {
+                            double? newWeight = double.tryParse(value);
+                            context.read<WorkoutProvider>().updateSet(
+                              exerciseIndex,
+                              setIndex,
+                              newWeight,
+                              exerciseSet.reps,
+                              exerciseSet.rpe,
+                              exerciseSet.rir,
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -175,7 +186,7 @@ class ExerciseCard extends StatelessWidget {
                       // --- REPS INPUT ---
                       SizedBox(
                         width: 70,
-                        child: TextField(
+                        child: TextFormField(
                           keyboardType: TextInputType.number,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
@@ -201,6 +212,17 @@ class ExerciseCard extends StatelessWidget {
                               borderSide: BorderSide.none,
                             ),
                           ),
+                          onFieldSubmitted: (value) {
+                            int newReps = int.tryParse(value) ?? 0;
+                            context.read<WorkoutProvider>().updateSet(
+                              exerciseIndex,
+                              setIndex,
+                              exerciseSet.weight,
+                              newReps,
+                              exerciseSet.rpe,
+                              exerciseSet.rir,
+                            );
+                          },
                         ),
                       ),
 

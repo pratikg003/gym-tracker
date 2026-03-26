@@ -12,7 +12,7 @@ class DailyLogScreen extends StatefulWidget {
 }
 
 class _DailyLogScreenState extends State<DailyLogScreen> {
-  final TextEditingController _weightController = TextEditingController();
+  // final TextEditingController _weightController = TextEditingController();
 
   @override
   void initState() {
@@ -24,11 +24,11 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    _weightController.dispose();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   _weightController.dispose();
+  //   super.dispose();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -98,11 +98,11 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
           }
 
           // If a weight is already saved for this date, populate the text field
-          if (provider.currentLog?.bodyWeight != null) {
-            _weightController.text = provider.currentLog!.bodyWeight.toString();
-          } else {
-            _weightController.clear();
-          }
+          // if (provider.currentLog?.bodyWeight != null) {
+          //   _weightController.text = provider.currentLog!.bodyWeight.toString();
+          // } else {
+          //   _weightController.clear();
+          // }
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
@@ -148,53 +148,53 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                     ),
                   ],
                 ),
-                const Divider(height: 32),
+                // const Divider(height: 32),
 
                 // --- 2. BODYWEIGHT INPUT ---
-                Row(
-                  children: [
-                    const Text(
-                      "Bodyweight (kg):",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextField(
-                        controller: _weightController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: 'e.g., 66.5',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                        // Saves the weight to SQLite when you hit 'Done' on the keyboard
-                        onSubmitted: (value) {
-                          double? weight = double.tryParse(value);
-                          if (weight != null) {
-                            provider.logBodyWeight(weight);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Bodyweight saved!'),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(height: 32),
+                // Row(
+                //   children: [
+                //     const Text(
+                //       "Bodyweight (kg):",
+                //       style: TextStyle(
+                //         fontSize: 18,
+                //         fontWeight: FontWeight.bold,
+                //       ),
+                //     ),
+                //     const SizedBox(width: 16),
+                //     Expanded(
+                //       child: TextField(
+                //         controller: _weightController,
+                //         keyboardType: const TextInputType.numberWithOptions(
+                //           decimal: true,
+                //         ),
+                //         decoration: const InputDecoration(
+                //           hintText: 'e.g., 66.5',
+                //           border: OutlineInputBorder(),
+                //           contentPadding: EdgeInsets.symmetric(
+                //             horizontal: 12,
+                //             vertical: 8,
+                //           ),
+                //         ),
+                //         // Saves the weight to SQLite when you hit 'Done' on the keyboard
+                //         onSubmitted: (value) {
+                //           double? weight = double.tryParse(value);
+                //           if (weight != null) {
+                //             provider.logBodyWeight(weight);
+                //             ScaffoldMessenger.of(context).showSnackBar(
+                //               const SnackBar(
+                //                 content: Text('Bodyweight saved!'),
+                //               ),
+                //             );
+                //           }
+                //         },
+                //       ),
+                //     ),
+                //   ],
+                // ),
+                // const Divider(height: 32),
 
                 // --- 3. REST DAY TOGGLE ---
-                if (provider.currentLog != null)
+                if (provider.currentLog != null && provider.currentLog!.exercises.isEmpty)
                   Card(
                     margin: const EdgeInsets.symmetric(
                       vertical: 8.0,
@@ -216,7 +216,7 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                     ),
                   ),
 
-                const SizedBox(height: 16),
+                // const SizedBox(height: 16),
 
                 // --- 4. EXERCISE LIST OR REST DAY MESSAGE ---
                 if (provider.currentLog != null &&
@@ -237,7 +237,6 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // --- 3. EXERCISE LIST ---
                   Expanded(
                     child: provider.currentLog?.exercises.isEmpty ?? true
                         ? const Center(
