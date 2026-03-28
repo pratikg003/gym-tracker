@@ -78,19 +78,21 @@ class ExerciseCard extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: Text(
-                    'Previous',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                  child: Center(
+                    child: Text(
+                      'Previous',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
                 SizedBox(
-                  width: 70,
+                  width: 55,
                   child: Text(
-                    'Weight',
+                    'kg',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.grey,
@@ -99,8 +101,9 @@ class ExerciseCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                SizedBox(width: 8),
                 SizedBox(
-                  width: 70,
+                  width: 45,
                   child: Text(
                     'Reps',
                     textAlign: TextAlign.center,
@@ -111,7 +114,33 @@ class ExerciseCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: 40), // Space for the checkmark icon
+                SizedBox(width: 8),
+                SizedBox(
+                  width: 45,
+                  child: Text(
+                    'RPE',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8),
+                SizedBox(
+                  width: 45,
+                  child: Text(
+                    'RIR',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8), // Space for the checkmark icon
               ],
             ),
             const SizedBox(height: 8),
@@ -188,6 +217,8 @@ class _SetRow extends StatefulWidget {
 class _SetRowState extends State<_SetRow> {
   late TextEditingController _weightController;
   late TextEditingController _repsController;
+  late TextEditingController _rpeController;
+  late TextEditingController _rirController;
 
   @override
   void initState() {
@@ -202,12 +233,24 @@ class _SetRowState extends State<_SetRow> {
           ? widget.exerciseSet.reps.toString()
           : '',
     );
+    _rpeController = TextEditingController(
+      text: widget.exerciseSet.rpe != null
+          ? widget.exerciseSet.rpe.toString()
+          : '',
+    );
+    _rirController = TextEditingController(
+      text: widget.exerciseSet.rir != null
+          ? widget.exerciseSet.rir.toString()
+          : '',
+    );
   }
 
   @override
   void dispose() {
     _weightController.dispose();
     _repsController.dispose();
+    _rpeController.dispose();
+    _rirController.dispose();
     super.dispose();
   }
 
@@ -215,14 +258,49 @@ class _SetRowState extends State<_SetRow> {
   void _saveData() {
     double? w = double.tryParse(_weightController.text);
     int r = int.tryParse(_repsController.text) ?? 0;
+    double? rpe = double.tryParse(_rpeController.text);
+    double? rir = double.tryParse(_rirController.text);
 
     context.read<WorkoutProvider>().updateSet(
       widget.exerciseIndex,
       widget.setIndex,
       w,
       r,
-      widget.exerciseSet.rpe,
-      widget.exerciseSet.rir,
+      rpe,
+      rir,
+    );
+  }
+
+  // Helper method to keep text fields clean and consistent
+  Widget _buildCompactTextField(TextEditingController controller, String hint) {
+    return TextField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+      ),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.grey),
+        filled: true,
+        fillColor: const Color(0xFF2C2C2C),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 10,
+          horizontal: 2,
+        ), // Tighter padding
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide.none,
+        ),
+      ),
+      onEditingComplete: () {
+        _saveData();
+        FocusScope.of(context).unfocus(); // Close keyboard
+      },
     );
   }
 
@@ -247,7 +325,6 @@ class _SetRowState extends State<_SetRow> {
           widget.setIndex,
         );
       },
-      // The Focus widget watches the whole row. If you tap away, it saves!
       child: Focus(
         onFocusChange: (hasFocus) {
           if (!hasFocus) _saveData();
@@ -283,85 +360,49 @@ class _SetRowState extends State<_SetRow> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
 
               // --- WEIGHT INPUT ---
               SizedBox(
-                width: 70,
-                child: TextField(
-                  controller: _weightController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '-',
-                    hintStyle: const TextStyle(color: Colors.grey),
-                    filled: true,
-                    fillColor: const Color(0xFF2C2C2C),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onEditingComplete: () {
-                    _saveData();
-                    FocusScope.of(context).unfocus(); // Close keyboard
-                  },
-                ),
+                width: 55,
+                child: _buildCompactTextField(_weightController, '-'),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
 
               // --- REPS INPUT ---
               SizedBox(
-                width: 70,
-                child: TextField(
-                  controller: _repsController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '-',
-                    hintStyle: const TextStyle(color: Colors.grey),
-                    filled: true,
-                    fillColor: const Color(0xFF2C2C2C),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onEditingComplete: () {
-                    _saveData();
-                    FocusScope.of(context).unfocus(); // Close keyboard
-                  },
-                ),
+                width: 45,
+                child: _buildCompactTextField(_repsController, '-'),
+              ),
+              const SizedBox(width: 8),
+
+              // --- RPE INPUT ---
+              SizedBox(
+                width: 45,
+                child: _buildCompactTextField(_rpeController, '-'),
+              ),
+              const SizedBox(width: 8),
+
+              // --- RIR INPUT ---
+              SizedBox(
+                width: 45,
+                child: _buildCompactTextField(_rirController, '-'),
               ),
 
               // --- CHECKMARK SPACE ---
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 32,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(
-                    Icons.check_box_outline_blank,
-                    color: Colors.grey,
-                    size: 24,
-                  ),
-                  onPressed: () {},
-                ),
-              ),
+              const SizedBox(width: 6),
+              // SizedBox(
+              //   width: 32,
+              //   child: IconButton(
+              //     padding: EdgeInsets.zero,
+              //     icon: const Icon(
+              //       Icons.check_box_outline_blank,
+              //       color: Colors.grey,
+              //       size: 24,
+              //     ),
+              //     onPressed: () {}, // We will wire this up later!
+              //   ),
+              // ),
             ],
           ),
         ),
