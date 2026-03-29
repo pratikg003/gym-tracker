@@ -4,7 +4,7 @@ import 'package:gym_tracker/core/models/workout_exercise.dart';
 import 'package:gym_tracker/core/providers/workout_provider.dart';
 import 'package:provider/provider.dart';
 
-class ExerciseCard extends StatelessWidget {
+class ExerciseCard extends StatefulWidget {
   final WorkoutExercise exercise;
   final int exerciseIndex;
 
@@ -15,20 +15,42 @@ class ExerciseCard extends StatelessWidget {
   });
 
   @override
+  State<ExerciseCard> createState() => _ExerciseCardState();
+}
+
+class _ExerciseCardState extends State<ExerciseCard> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch previous performance when the card loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WorkoutProvider>().loadExerciseHistory(
+        widget.exercise.exerciseName,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Read the history from our new map
+    final pastPerformance = context
+        .watch<WorkoutProvider>()
+        .pastPerformances[widget.exercise.exerciseName];
+
     return Card(
-      margin: EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --- EXERCISE HEADER ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  exercise.exerciseName,
-                  style: TextStyle(
+                  widget.exercise.exerciseName, // Note: added 'widget.' here
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -36,12 +58,12 @@ class ExerciseCard extends StatelessWidget {
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_horiz, color: Colors.grey),
-                  color: const Color(0xFF2C2C2C), // Dark theme surface
+                  color: const Color(0xFF2C2C2C),
                   onSelected: (value) {
                     if (value == 'delete') {
                       context.read<WorkoutProvider>().deleteExercise(
-                        exerciseIndex,
-                      );
+                        widget.exerciseIndex,
+                      ); // added 'widget.'
                     }
                   },
                   itemBuilder: (context) => [
@@ -64,6 +86,7 @@ class ExerciseCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
+            // --- COLUMN HEADERS (Keep your existing Row here) ---
             const Row(
               children: [
                 SizedBox(
@@ -78,14 +101,12 @@ class ExerciseCard extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: Center(
-                    child: Text(
-                      'Previous',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  child: Text(
+                    'Previous',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -140,7 +161,7 @@ class ExerciseCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: 8), // Space for the checkmark icon
+                SizedBox(width: 8),
               ],
             ),
             const SizedBox(height: 8),
@@ -149,15 +170,24 @@ class ExerciseCard extends StatelessWidget {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: exercise.sets.length,
+              itemCount: widget.exercise.sets.length, // added 'widget.'
               itemBuilder: (context, setIndex) {
-                final exerciseSet = exercise.sets[setIndex];
+                final exerciseSet =
+                    widget.exercise.sets[setIndex]; // added 'widget.'
+
+                // Grab the corresponding set from the previous session if it exists
+                ExerciseSet? pastSet;
+                if (pastPerformance != null &&
+                    setIndex < pastPerformance.sets.length) {
+                  pastSet = pastPerformance.sets[setIndex];
+                }
 
                 return _SetRow(
                   key: ValueKey(exerciseSet.id),
-                  exerciseIndex: exerciseIndex,
+                  exerciseIndex: widget.exerciseIndex, // added 'widget.'
                   setIndex: setIndex,
                   exerciseSet: exerciseSet,
+                  pastSet: pastSet, // <--- Pass it down!
                 );
               },
             ),
@@ -182,7 +212,7 @@ class ExerciseCard extends StatelessWidget {
                 ),
                 onPressed: () {
                   context.read<WorkoutProvider>().addSetToExercise(
-                    exerciseIndex,
+                    widget.exerciseIndex, // added 'widget.'
                     null,
                     0,
                     null,
@@ -202,12 +232,14 @@ class _SetRow extends StatefulWidget {
   final int exerciseIndex;
   final int setIndex;
   final ExerciseSet exerciseSet;
+  final ExerciseSet? pastSet;
 
   const _SetRow({
     super.key,
     required this.exerciseIndex,
     required this.setIndex,
     required this.exerciseSet,
+    this.pastSet,
   });
 
   @override
@@ -306,6 +338,13 @@ class _SetRowState extends State<_SetRow> {
 
   @override
   Widget build(BuildContext context) {
+    String previousText = '-';
+    if (widget.pastSet != null && widget.pastSet!.reps > 0) {
+      String w = widget.pastSet!.weight != null 
+          ? '${widget.pastSet!.weight}kg' 
+          : 'BW';
+      previousText = '$w x ${widget.pastSet!.reps}';
+    }
     return Dismissible(
       key: widget.key!,
       direction: DismissDirection.endToStart,
@@ -353,8 +392,8 @@ class _SetRowState extends State<_SetRow> {
                     color: const Color(0xFF2C2C2C),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text(
-                    '-',
+                  child: Text(
+                    previousText,
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey, fontSize: 13),
                   ),

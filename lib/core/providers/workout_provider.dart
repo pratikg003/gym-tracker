@@ -15,9 +15,6 @@ class WorkoutProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String get selectedDate => _selectedDate;
 
-  WorkoutExercise? _lastPerformance;
-  WorkoutExercise? get lastPerformance => _lastPerformance;
-
   double _currentPR = 0.0;
   double get currentPR => _currentPR;
 
@@ -29,6 +26,9 @@ class WorkoutProvider with ChangeNotifier {
 
   List<Map<String, dynamic>> _templates = [];
   List<Map<String, dynamic>> get templates => _templates;
+
+  final Map<String, WorkoutExercise> _pastPerformances = {};
+  Map<String, WorkoutExercise> get pastPerformances => _pastPerformances;
 
   WorkoutProvider() {
     loadTemplates();
@@ -293,18 +293,19 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadExerciseHistory(String exerciseName) async {
-    _lastPerformance = null; // Reset first to avoid showing wrong data
-    // notifyListeners(); // Optional: uncomment if you want to show a loading spinner
-
-    // Fetch from Repo
+Future<void> loadExerciseHistory(String exerciseName) async {
     WorkoutExercise? history = await _repository.getLastExercisePerformance(
       exerciseName,
       _selectedDate,
     );
 
-    _lastPerformance = history;
-    notifyListeners();
+    if (history != null) {
+      _pastPerformances[exerciseName] = history;
+    } else {
+      _pastPerformances.remove(exerciseName); 
+    }
+    
+    notifyListeners(); 
   }
 
   Future<void> loadPersonalRecord(String exerciseName) async {
