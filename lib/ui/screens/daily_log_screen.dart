@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/ui/widgets/exercise_card.dart';
 import 'package:provider/provider.dart';
+import 'package:table_calendar/table_calendar.dart';
 import '../../core/providers/workout_provider.dart';
 import 'exercise_selection_screen.dart';
 
@@ -13,6 +14,7 @@ class DailyLogScreen extends StatefulWidget {
 
 class _DailyLogScreenState extends State<DailyLogScreen> {
   // final TextEditingController _weightController = TextEditingController();
+  CalendarFormat _calendarFormat = CalendarFormat.week;
 
   @override
   void initState() {
@@ -24,57 +26,15 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
     });
   }
 
-  // @override
-  // void dispose() {
-  //   _weightController.dispose();
-  //   super.dispose();
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Workout Log'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'save') _showSaveTemplateDialog(context);
-              if (value == 'load') _showLoadTemplateSheet(context);
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'load',
-                child: Row(
-                  children: [
-                    Icon(Icons.download),
-                    SizedBox(width: 8),
-                    Text('Load Routine'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'save',
-                child: Row(
-                  children: [
-                    Icon(Icons.save),
-                    SizedBox(width: 8),
-                    Text('Save as Routine'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-
-      // FLOATING ACTION BUTTON - Navigates to the multi-select screen
+      // FLOATING ACTION BUTTON
       floatingActionButton: Consumer<WorkoutProvider>(
         builder: (context, provider, child) {
           return FloatingActionButton(
             child: const Icon(Icons.add),
             onPressed: () async {
-              // Navigate to the new screen and wait for the result
               final List<String>? selectedExercises = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -82,7 +42,6 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                 ),
               );
 
-              // If the user selected exercises and didn't just hit back, save them
               if (selectedExercises != null && selectedExercises.isNotEmpty) {
                 provider.addMultipleExercises(selectedExercises);
               }
@@ -97,131 +56,222 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // If a weight is already saved for this date, populate the text field
-          // if (provider.currentLog?.bodyWeight != null) {
-          //   _weightController.text = provider.currentLog!.bodyWeight.toString();
-          // } else {
-          //   _weightController.clear();
-          // }
-
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // const WeightChart(),
-                // const SizedBox(height: 24),
-                // --- 1. DATE SELECTOR ---
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Date:",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        DateTime? picked = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.parse(provider.selectedDate),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime.now().add(
-                            const Duration(days: 365),
+          // Added SafeArea because we removed the App Bar
+          return SafeArea(
+            child: CustomScrollView(
+              slivers: [
+                // --- 1. CALENDAR & REST DAY TOGGLE ---
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // CALENDAR QUICK SELECTOR
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF1E1E1E), // Darker header background
+                          borderRadius: BorderRadius.vertical(
+                            bottom: Radius.circular(
+                              32,
+                            ), // High-radius curve on the bottom
                           ),
-                        );
-                        if (picked != null) {
-                          provider.loadLogForDate(
-                            picked.toString().split(' ')[0],
-                          );
-                        }
-                      },
-                      child: Text(
-                        provider.selectedDate,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.blue,
+                        ),
+                        // Stack allows us to place the menu button over the calendar
+                        child: Column(
+                          children: [
+                            Stack(
+                              children: [
+                                TableCalendar(
+                                  focusedDay: DateTime.parse(
+                                    provider.selectedDate,
+                                  ),
+                                  firstDay: DateTime(2020),
+                                  lastDay: DateTime.now(),
+
+                                  calendarFormat: _calendarFormat,
+                                  availableCalendarFormats: const {
+                                    CalendarFormat.month: 'Month',
+                                    CalendarFormat.week: 'Week',
+                                  },
+                                  onFormatChanged: (format) {
+                                    if (_calendarFormat != format) {
+                                      setState(() {
+                                        _calendarFormat = format;
+                                      });
+                                    }
+                                  },
+                                  selectedDayPredicate: (day) {
+                                    return isSameDay(
+                                      DateTime.parse(provider.selectedDate),
+                                      day,
+                                    );
+                                  },
+                                  onDaySelected: (selectedDay, focusedDay) {
+                                    provider.loadLogForDate(
+                                      selectedDay.toString().split(' ')[0],
+                                    );
+                                  },
+                                  headerVisible: true,
+                                  headerStyle: const HeaderStyle(
+                                    formatButtonVisible: false,
+                                    titleCentered:
+                                        false, // <-- Moves the Month to the left
+                                    titleTextStyle: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    leftChevronIcon: Icon(
+                                      Icons.chevron_left,
+                                      color: Colors.orange,
+                                    ),
+                                    rightChevronIcon: Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.orange,
+                                    ),
+                                    rightChevronMargin: EdgeInsets.only(
+                                      right: 40,
+                                    ), // <-- Shifts right arrow over to make room for menu
+                                  ),
+                                  calendarStyle: CalendarStyle(
+                                    isTodayHighlighted: true,
+                                    todayDecoration: BoxDecoration(
+                                      color: Colors.orange.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    selectedDecoration: const BoxDecoration(
+                                      color: Colors.orange,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    defaultTextStyle: const TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                    weekendTextStyle: const TextStyle(
+                                      color: Colors.white70,
+                                    ),
+                                    outsideDaysVisible: false,
+                                  ),
+                                  daysOfWeekStyle: const DaysOfWeekStyle(
+                                    weekdayStyle: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                    ),
+                                    weekendStyle: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+
+                                // --- THE MENU BUTTON INSIDE THE CARD ---
+                                Positioned(
+                                  top: 4,
+                                  right: 0,
+                                  child: PopupMenuButton<String>(
+                                    icon: const Icon(
+                                      Icons.more_vert,
+                                      color: Colors.grey,
+                                    ),
+                                    color: const Color(
+                                      0xFF2C2C2C,
+                                    ), // Dark theme dropdown
+                                    onSelected: (value) {
+                                      if (value == 'save') {
+                                        _showSaveTemplateDialog(context);
+                                      }
+                                      if (value == 'load') {
+                                        _showLoadTemplateSheet(context);
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'load',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.download,
+                                              color: Colors.white,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Load Routine',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'save',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.save,
+                                              color: Colors.white,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Save as Routine',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Icon(
+                              _calendarFormat == CalendarFormat.month
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                              color: Colors.grey.withValues(alpha: 0.5),
+                              size: 24,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                // const Divider(height: 32),
 
-                // --- 2. BODYWEIGHT INPUT ---
-                // Row(
-                //   children: [
-                //     const Text(
-                //       "Bodyweight (kg):",
-                //       style: TextStyle(
-                //         fontSize: 18,
-                //         fontWeight: FontWeight.bold,
-                //       ),
-                //     ),
-                //     const SizedBox(width: 16),
-                //     Expanded(
-                //       child: TextField(
-                //         controller: _weightController,
-                //         keyboardType: const TextInputType.numberWithOptions(
-                //           decimal: true,
-                //         ),
-                //         decoration: const InputDecoration(
-                //           hintText: 'e.g., 66.5',
-                //           border: OutlineInputBorder(),
-                //           contentPadding: EdgeInsets.symmetric(
-                //             horizontal: 12,
-                //             vertical: 8,
-                //           ),
-                //         ),
-                //         // Saves the weight to SQLite when you hit 'Done' on the keyboard
-                //         onSubmitted: (value) {
-                //           double? weight = double.tryParse(value);
-                //           if (weight != null) {
-                //             provider.logBodyWeight(weight);
-                //             ScaffoldMessenger.of(context).showSnackBar(
-                //               const SnackBar(
-                //                 content: Text('Bodyweight saved!'),
-                //               ),
-                //             );
-                //           }
-                //         },
-                //       ),
-                //     ),
-                //   ],
-                // ),
-                // const Divider(height: 32),
+                      const SizedBox(height: 16),
 
-                // --- 3. REST DAY TOGGLE ---
-                if (provider.currentLog != null && provider.currentLog!.exercises.isEmpty)
-                  Card(
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 8.0,
-                    ), // Removed horizontal margin to align with padding
-                    child: SwitchListTile(
-                      title: const Text(
-                        'Mark as Rest Day',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: const Text('Take a break and recover.'),
-                      secondary: const Icon(
-                        Icons.airline_seat_individual_suite,
-                        color: Colors.blue,
-                      ),
-                      value: provider.currentLog!.isRestDay,
-                      onChanged: (bool value) {
-                        provider.toggleRestDay(value);
-                      },
-                    ),
+                      // REST DAY TOGGLE
+                      if (provider.currentLog != null &&
+                          provider.currentLog!.exercises.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16,0,16,16),
+                          child: Card(
+                            margin: EdgeInsets.zero,
+                            child: SwitchListTile(
+                              title: const Text(
+                                'Mark as Rest Day',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: const Text('Take a break and recover.'),
+                              secondary: const Icon(
+                                Icons.airline_seat_individual_suite,
+                                color: Colors.orange,
+                              ),
+                              value: provider.currentLog!.isRestDay,
+                              onChanged: (bool value) {
+                                provider.toggleRestDay(value);
+                              },
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
+                ),
 
-                // const SizedBox(height: 16),
-
-                // --- 4. EXERCISE LIST OR REST DAY MESSAGE ---
+                // --- 2. EXERCISE LIST ---
                 if (provider.currentLog != null &&
                     provider.currentLog!.isRestDay)
-                  const Expanded(
+                  const SliverToBoxAdapter(
                     child: Center(
                       child: Text(
                         "Enjoy your rest day! 🛑",
@@ -229,31 +279,30 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                       ),
                     ),
                   )
-                else ...[
-                  const SizedBox(height: 32),
-                  const Text(
-                    "Exercises",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                else if (provider.currentLog?.exercises.isEmpty ?? true)
+                  const SliverToBoxAdapter(
+                    child: Center(
+                      child: Text(
+                        "No exercises added yet. Tap + to start.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        return ExerciseCard(
+                          exercise: provider.currentLog!.exercises[index],
+                          exerciseIndex: index,
+                        );
+                      }, childCount: provider.currentLog!.exercises.length),
+                    ),
                   ),
-                  const SizedBox(height: 16),
 
-                  Expanded(
-                    child: provider.currentLog?.exercises.isEmpty ?? true
-                        ? const Center(
-                            child: Text("No exercises added yet. Tap + to start."),
-                          )
-                        : ListView.builder(
-                            itemCount: provider.currentLog!.exercises.length,
-                            itemBuilder: (context, index) {
-                              // USE YOUR NEW WIDGET HERE:
-                              return ExerciseCard(
-                                exercise: provider.currentLog!.exercises[index],
-                                exerciseIndex: index,
-                              );
-                            },
-                          ),
-                  ),
-                ],
+                // Add bottom padding so the FAB doesn't cover the last card
+                const SliverToBoxAdapter(child: SizedBox(height: 80)),
               ],
             ),
           );
