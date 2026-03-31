@@ -26,65 +26,62 @@ class _WeightChartState extends State<WeightChart> {
         final history = provider.weightHistory;
         
         if (history.isEmpty) {
-          return const SizedBox(
-            height: 200, 
-            width: double.infinity,
-            child: Center(child: Text("Log your weight to see progress."))
+          return const Center(
+            child: Text(
+              "Log your weight to see progress.",
+              style: TextStyle(color: Colors.grey),
+            ),
           );
         }
 
-        // Convert SQLite data into FlSpot coordinates
         List<FlSpot> spots = [];
+        double minY = double.infinity;
+        double maxY = 0;
+
         for (int i = 0; i < history.length; i++) {
-          spots.add(FlSpot(i.toDouble(), history[i]['body_weight'] as double));
+          double weight = history[i]['body_weight'] as double;
+          spots.add(FlSpot(i.toDouble(), weight));
+          if (weight < minY) minY = weight;
+          if (weight > maxY) maxY = weight;
         }
 
-        // CRITICAL FIX: Prevent division by zero if there is only 1 data point
+        // Add padding to Y-axis so the line doesn't touch the top/bottom edges
+        minY = (minY - 2).clamp(0, double.infinity);
+        maxY = maxY + 2;
+
         double maxXValue = spots.length > 1 ? (spots.length - 1).toDouble() : 1.0;
 
-        return SizedBox(
-          height: 250,
-          width: double.infinity, // Safe to use here inside a SizedBox
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 5)],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Bodyweight Trend", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: LineChart(
-                    LineChartData(
-                      minX: 0.0,
-                      maxX: maxXValue, // Enforces a valid chart width constraint
-                      minY: 60.0,
-                      maxY: 75.0,
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: spots,
-                          isCurved: true,
-                          color: Colors.blue,
-                          barWidth: 3,
-                          dotData: const FlDotData(show: true),
-                        ),
-                      ],
-                      titlesData: const FlTitlesData(
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), 
-                      ),
-                      gridData: const FlGridData(show: false),
-                      borderData: FlBorderData(show: false),
-                    ),
+        // Return ONLY the LineChart, no background containers or text
+        return LineChart(
+          LineChartData(
+            minX: 0.0,
+            maxX: maxXValue,
+            minY: minY,
+            maxY: maxY,
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                color: Colors.orange, // Matched to theme
+                barWidth: 3,
+                dotData: FlDotData(
+                  show: true,
+                  getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                    radius: 4,
+                    color: Colors.orange,
+                    strokeWidth: 2,
+                    strokeColor: const Color(0xFF1E1E1E),
                   ),
                 ),
-              ],
-            ),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: Colors.orange.withValues(alpha: 0.1), // Subtle gradient under the line
+                ),
+              ),
+            ],
+            titlesData: const FlTitlesData(show: false), // Hide all axis numbers for a clean look
+            gridData: const FlGridData(show: false),
+            borderData: FlBorderData(show: false),
           ),
         );
       },

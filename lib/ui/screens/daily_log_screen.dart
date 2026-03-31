@@ -239,12 +239,24 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
                       ),
 
                       const SizedBox(height: 16),
+                      // --- 2. NEW BODYWEIGHT LOG ---
+                      if (provider.currentLog != null) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: _BodyweightCard(
+                            // The ValueKey forces the text field to refresh when the date changes
+                            key: ValueKey(provider.selectedDate),
+                            initialWeight: provider.currentLog!.bodyWeight,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // REST DAY TOGGLE
                       if (provider.currentLog != null &&
                           provider.currentLog!.exercises.isEmpty)
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16,0,16,16),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                           child: Card(
                             margin: EdgeInsets.zero,
                             child: SwitchListTile(
@@ -419,6 +431,112 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
           },
         );
       },
+    );
+  }
+}
+
+class _BodyweightCard extends StatefulWidget {
+  final double? initialWeight;
+
+  const _BodyweightCard({super.key, this.initialWeight});
+
+  @override
+  State<_BodyweightCard> createState() => _BodyweightCardState();
+}
+
+class _BodyweightCardState extends State<_BodyweightCard> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.initialWeight != null ? widget.initialWeight.toString() : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    double? bw = double.tryParse(_controller.text);
+
+    if (bw != null) {
+      context.read<WorkoutProvider>().logBodyWeight(bw);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      color: const Color(0xFF1E1E1E), // Matches the calendar header
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.monitor_weight_outlined, color: Colors.orange),
+                SizedBox(width: 12),
+                Text(
+                  'Bodyweight',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(
+              width: 80,
+              child: Focus(
+                onFocusChange: (hasFocus) {
+                  if (!hasFocus) _save(); // Saves when tapping outside the box
+                },
+                child: TextField(
+                  controller: _controller,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'kg',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    filled: true,
+                    fillColor: const Color(0xFF2C2C2C), // Darker inner box
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 8,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onEditingComplete: () {
+                    _save();
+                    FocusScope.of(
+                      context,
+                    ).unfocus(); // Closes keyboard on "Done"
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
