@@ -329,4 +329,33 @@ class GymRepository {
       whereArgs: [logId],
     );
   }
+
+  Future<List<String>> getUniqueExerciseNames() async {
+    final db = await _dbHelper.database; // Assuming your getter is called database
+    
+    // Query distinct exercise names from your tables
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT DISTINCT exercise_name FROM workout_exercises ORDER BY exercise_name ASC'
+    );
+    
+    return maps.map((map) => map['exercise_name'] as String).toList();
+  }
+
+  Future<int> getWeeklyWorkoutCount() async {
+    final db = await _dbHelper.database;
+    
+    // Get dates for today and 7 days ago
+    final now = DateTime.now();
+    final String today = now.toIso8601String().split('T')[0];
+    final String weekAgo = now.subtract(const Duration(days: 7)).toIso8601String().split('T')[0];
+
+    // Count logs in the last 7 days that are NOT marked as rest days
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+      SELECT COUNT(*) as count FROM daily_logs 
+      WHERE date BETWEEN ? AND ? 
+      AND is_rest_day = 0
+    ''', [weekAgo, today]);
+
+    return result.first['count'] as int? ?? 0;
+  }
 }

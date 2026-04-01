@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:gym_tracker/core/database/gym_repository.dart';
 import 'package:gym_tracker/core/models/daily_log.dart';
 import 'package:gym_tracker/core/models/exercise_set.dart';
@@ -29,6 +30,16 @@ class WorkoutProvider with ChangeNotifier {
 
   final Map<String, WorkoutExercise> _pastPerformances = {};
   Map<String, WorkoutExercise> get pastPerformances => _pastPerformances;
+
+  List<String> _allLoggedExercises = [
+    'Bench Press',
+    'Squat',
+    'Deadlift',
+  ]; // Fallback defaults
+  List<String> get allLoggedExercises => _allLoggedExercises;
+
+  int _weeklyWorkoutCount = 0;
+  int get weeklyWorkoutCount => _weeklyWorkoutCount;
 
   WorkoutProvider() {
     loadTemplates();
@@ -293,7 +304,7 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
-Future<void> loadExerciseHistory(String exerciseName) async {
+  Future<void> loadExerciseHistory(String exerciseName) async {
     WorkoutExercise? history = await _repository.getLastExercisePerformance(
       exerciseName,
       _selectedDate,
@@ -302,10 +313,10 @@ Future<void> loadExerciseHistory(String exerciseName) async {
     if (history != null) {
       _pastPerformances[exerciseName] = history;
     } else {
-      _pastPerformances.remove(exerciseName); 
+      _pastPerformances.remove(exerciseName);
     }
-    
-    notifyListeners(); 
+
+    notifyListeners();
   }
 
   Future<void> loadPersonalRecord(String exerciseName) async {
@@ -388,5 +399,54 @@ Future<void> loadExerciseHistory(String exerciseName) async {
       // Re-fetch the log from SQLite to sync the local memory with the new ID
       await loadLogForDate(_currentLog!.date);
     }
+  }
+
+  Future<void> loadAllLoggedExercises() async {
+    final exercises = await _repository.getUniqueExerciseNames();
+    if (exercises.isNotEmpty) {
+      _allLoggedExercises = exercises;
+      notifyListeners();
+    }
+  }
+
+  // --- TREND CALCULATORS ---
+
+  String getBodyweightTrend() {
+    // If we don't have at least 2 logs, we can't calculate a trend
+    if (weightHistory.length < 2) return '';
+
+    // Assuming your database orders oldest to newest
+    double current = weightHistory.last['body_weight'] as double;
+    double previous =
+        weightHistory[weightHistory.length - 2]['body_weight'] as double;
+
+    double diff = current - previous;
+
+    if (diff == 0) return 'No change';
+
+    String direction = diff > 0 ? '↑' : '↓';
+    
+    return '$direction ${diff.abs().toStringAsFixed(1)} kg';
+  }
+
+  String getMaxLiftTrend() {
+    if (progressionHistory.length < 2) return '';
+
+    double current = progressionHistory.last['max_1rm'] as double;
+    double previous =
+        progressionHistory[progressionHistory.length - 2]['max_1rm'] as double;
+
+    double diff = current - previous;
+
+    if (diff == 0) return 'No change';
+
+    String direction = diff > 0 ? '↑' : '↓';
+
+    return '$direction ${diff.abs().toStringAsFixed(1)} kg';
+  }
+
+  Future<void> loadWeeklyStats() async {
+    _weeklyWorkoutCount = await _repository.getWeeklyWorkoutCount();
+    notifyListeners();
   }
 }

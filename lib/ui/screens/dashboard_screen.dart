@@ -13,21 +13,39 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   // Default to a common exercise, we will make this dynamic later based on DB
-  String? _selectedExercise = 'Bench Press'; 
+  String? _selectedExercise = 'Bench Press';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WorkoutProvider>().loadAllLoggedExercises();
+      context.read<WorkoutProvider>().loadWeeklyStats();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<WorkoutProvider>();
-    
+
     // Grab the most recent weight log, defaulting to 65.0 kg if empty
-    final currentWeight = provider.currentLog?.bodyWeight ?? 65.0; 
-    
+    final currentWeight = provider.currentLog?.bodyWeight ?? 65.0;
+
     // Placeholder for max lift (we will wire this to a provider method later)
-    final double maxLift = 100.0; 
+    final double maxLift = 100.0;
+
+    String currentSelection = _selectedExercise ?? 'Bench Press';
+    if (!provider.allLoggedExercises.contains(currentSelection) &&
+        provider.allLoggedExercises.isNotEmpty) {
+      currentSelection = provider.allLoggedExercises.first;
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Progress Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Progress Dashboard',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
@@ -37,62 +55,149 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --- 0. CONSISTENCY TRACKER ---
+            Row(
+              children: [
+                Expanded(
+                  child: Card(
+                    margin: EdgeInsets.zero,
+                    color: const Color(0xFF1E1E1E),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.local_fire_department,
+                                color: Colors.orange,
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                '7-Day Consistency',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '${provider.weeklyWorkoutCount}', // <--- WIRED TO PROVIDER
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: 6.0,
+                                  left: 6.0,
+                                ),
+                                child: Text(
+                                  'workouts completed',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
             // --- 1. BODY WEIGHT SECTION ---
             const Text(
               'Body Weight',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 8),
             Card(
               margin: EdgeInsets.zero,
               color: const Color(0xFF1E1E1E),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Current Weight', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    const Text(
+                      'Current Weight',
+                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
                           '${currentWeight.toStringAsFixed(1)} kg',
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.only(bottom: 4.0),
                           child: Text(
-                            '↑ 1.2 kg', // TODO: Calculate diff from last week
-                            style: TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.bold),
+                            provider.getBodyweightTrend(),
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     // Plug in your existing chart widget here!
-                    const SizedBox(
-                      height: 150,
-                      child: WeightChart(), 
-                    ),
+                    const SizedBox(height: 150, child: WeightChart()),
                   ],
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
 
             // --- 2. EXERCISE PROGRESS SECTION ---
             const Text(
               'Exercise Progress',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 8),
             Card(
               margin: EdgeInsets.zero,
               color: const Color(0xFF1E1E1E),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -104,47 +209,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF2C2C2C),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange, width: 1), // Orange accent border
+                        border: Border.all(
+                          color: Colors.orange,
+                          width: 1,
+                        ), // Orange accent border
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _selectedExercise,
                           isExpanded: true,
                           dropdownColor: const Color(0xFF2C2C2C),
-                          icon: const Icon(Icons.arrow_drop_down, color: Colors.orange),
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.orange,
+                          ),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
                           onChanged: (String? newValue) {
                             setState(() {
                               _selectedExercise = newValue;
                             });
                           },
-                          // TODO: Replace with provider.getAllLoggedExercises()
-                          items: <String>['Bench Press', 'Squats', 'Barbell Row', 'Deadlift'] 
+                          items: provider.allLoggedExercises
                               .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              })
+                              .toList(),
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
-                    const Text('Max Lift', style: TextStyle(color: Colors.grey, fontSize: 14)),
+
+                    const Text(
+                      'Max Lift',
+                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
                           '${maxLift.toStringAsFixed(1)} kg',
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.only(bottom: 4.0),
                           child: Text(
-                            '↑ 2.5 kg', // TODO: Calculate diff from last 1RM
-                            style: TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.bold),
+                            provider.getMaxLiftTrend(),
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -153,7 +278,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     // Plug in your existing chart widget and pass the selected exercise!
                     SizedBox(
                       height: 150,
-                      child: ProgressionChart(exerciseName: _selectedExercise ?? ''), 
+                      child: ProgressionChart(
+                        exerciseName: _selectedExercise ?? '',
+                      ),
                     ),
                   ],
                 ),
