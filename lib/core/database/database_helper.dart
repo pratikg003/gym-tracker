@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const _databaseName = "GymTracker.db";
-  static const _databaseVersion = 2;
+  static const _databaseVersion = 3;
 
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -33,6 +33,30 @@ class DatabaseHelper {
       await db.execute(
         'ALTER TABLE daily_logs ADD COLUMN is_rest_day INTEGER DEFAULT 0',
       );
+    }
+
+    if (oldVersion < 3) {
+      // Our new migration for Day 8!
+      await db.execute('''
+        CREATE TABLE exercise_catalog (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE,
+          category TEXT
+        )
+      ''');
+
+      final defaults = [
+        {'name': 'Bench Press', 'category': 'Chest'},
+        {'name': 'Squat', 'category': 'Legs'},
+        {'name': 'Deadlift', 'category': 'Back'},
+        {'name': 'Overhead Press', 'category': 'Shoulders'},
+        {'name': 'Barbell Curl', 'category': 'Biceps'},
+        {'name': 'Tricep Pushdown', 'category': 'Triceps'},
+      ];
+
+      for (var exercise in defaults) {
+        await db.insert('exercise_catalog', exercise);
+      }
     }
   }
 
@@ -97,6 +121,27 @@ class DatabaseHelper {
         FOREIGN KEY (template_id) REFERENCES workout_templates (id) ON DELETE CASCADE
       )
     ''');
+
+    await db.execute('''
+    CREATE TABLE exercise_catalog (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE,
+      category TEXT
+    )
+    ''');
+
+    final defaults = [
+      {'name': 'Bench Press', 'category': 'Chest'},
+      {'name': 'Squat', 'category': 'Legs'},
+      {'name': 'Deadlift', 'category': 'Back'},
+      {'name': 'Overhead Press', 'category': 'Shoulders'},
+      {'name': 'Barbell Curl', 'category': 'Biceps'},
+      {'name': 'Tricep Pushdown', 'category': 'Triceps'},
+    ];
+
+    for (var exercise in defaults) {
+      await db.insert('exercise_catalog', exercise);
+    }
   }
 
   // Safely close the database connection

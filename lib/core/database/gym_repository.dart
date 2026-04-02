@@ -324,38 +324,82 @@ class GymRepository {
     final db = await _dbHelper.database;
     await db.update(
       'daily_logs',
-      {'is_rest_day': isRestDay ? 1 : 0}, // SQLite doesn't have booleans, so we use 1 and 0
+      {
+        'is_rest_day': isRestDay ? 1 : 0,
+      }, // SQLite doesn't have booleans, so we use 1 and 0
       where: 'id = ?',
       whereArgs: [logId],
     );
   }
 
   Future<List<String>> getUniqueExerciseNames() async {
-    final db = await _dbHelper.database; // Assuming your getter is called database
-    
+    final db =
+        await _dbHelper.database; // Assuming your getter is called database
+
     // Query distinct exercise names from your tables
     final List<Map<String, dynamic>> maps = await db.rawQuery(
-      'SELECT DISTINCT exercise_name FROM workout_exercises ORDER BY exercise_name ASC'
+      'SELECT DISTINCT exercise_name FROM workout_exercises ORDER BY exercise_name ASC',
     );
-    
+
     return maps.map((map) => map['exercise_name'] as String).toList();
   }
 
   Future<int> getWeeklyWorkoutCount() async {
     final db = await _dbHelper.database;
-    
+
     // Get dates for today and 7 days ago
     final now = DateTime.now();
     final String today = now.toIso8601String().split('T')[0];
-    final String weekAgo = now.subtract(const Duration(days: 7)).toIso8601String().split('T')[0];
+    final String weekAgo = now
+        .subtract(const Duration(days: 7))
+        .toIso8601String()
+        .split('T')[0];
 
     // Count logs in the last 7 days that are NOT marked as rest days
-    final List<Map<String, dynamic>> result = await db.rawQuery('''
+    final List<Map<String, dynamic>> result = await db.rawQuery(
+      '''
       SELECT COUNT(*) as count FROM daily_logs 
       WHERE date BETWEEN ? AND ? 
       AND is_rest_day = 0
-    ''', [weekAgo, today]);
+    ''',
+      [weekAgo, today],
+    );
 
     return result.first['count'] as int? ?? 0;
+  }
+
+  Future<void> insertCustomExercise(String name, String category) async {
+    final db = await _dbHelper.database;
+    // ConflictAlgorithm.ignore prevents crashing if the user adds a duplicate name
+    await db.insert('exercise_catalog', {
+      'name': name,
+      'category': category,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
+
+  Future<Map<String, List<String>>> getExerciseCatalog() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query('exercise_catalog');
+
+    Map<String, List<String>> catalog = {};
+    for (var map in maps) {
+      String category = map['category'] as String;
+      String name = map['name'] as String;
+
+      if (!catalog.containsKey(category)) {
+        catalog[category] = [];
+      }
+      catalog[category]!.add(name);
+    }
+    return catalog;
+  }
+
+  Future<void> deleteExerciseFromCatalog(String name) async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'exercise_catalog',
+      where: 'name = ?',
+      whereArgs: [name],
+    );
   }
 }

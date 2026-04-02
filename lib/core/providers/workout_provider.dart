@@ -41,8 +41,12 @@ class WorkoutProvider with ChangeNotifier {
   int _weeklyWorkoutCount = 0;
   int get weeklyWorkoutCount => _weeklyWorkoutCount;
 
+  Map<String, List<String>> _exerciseCatalog = {};
+  Map<String, List<String>> get exerciseCatalog => _exerciseCatalog;
+
   WorkoutProvider() {
     loadTemplates();
+    loadCatalog();
   }
 
   //load a day's workout from SQLite into memory
@@ -448,5 +452,20 @@ class WorkoutProvider with ChangeNotifier {
   Future<void> loadWeeklyStats() async {
     _weeklyWorkoutCount = await _repository.getWeeklyWorkoutCount();
     notifyListeners();
+  }
+
+  Future<void> loadCatalog() async {
+    _exerciseCatalog = await _repository.getExerciseCatalog();
+    notifyListeners();
+  }
+
+  Future<void> createCustomExercise(String name, String category) async {
+    await _repository.insertCustomExercise(name, category);
+    await loadCatalog(); // Instantly refresh the UI list
+  }
+
+  Future<void> deleteCustomExercise(String name) async {
+    await _repository.deleteExerciseFromCatalog(name);
+    await loadCatalog(); // Instantly removes it from the screen
   }
 }
