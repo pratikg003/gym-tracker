@@ -23,6 +23,7 @@ class DailyLog {
       id: map['id'],
       date: map['date'],
       bodyWeight: map['body_weight'],
+      isRestDay: map['is_rest_day'] == 1,
       exercises: exercises ?? [],
     );
   }
@@ -32,6 +33,7 @@ class DailyLog {
       'id': id,
       'date': date,
       'body_weight': bodyWeight,
+      'is_rest_day': isRestDay ? 1 : 0,
     };
   }
 }

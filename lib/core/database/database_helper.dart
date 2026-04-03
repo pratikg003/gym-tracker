@@ -131,13 +131,43 @@ class DatabaseHelper {
     ''');
 
     final defaults = [
-      {'name': 'Bench Press', 'category': 'Chest'},
-      {'name': 'Squat', 'category': 'Legs'},
-      {'name': 'Deadlift', 'category': 'Back'},
-      {'name': 'Overhead Press', 'category': 'Shoulders'},
-      {'name': 'Barbell Curl', 'category': 'Biceps'},
-      {'name': 'Tricep Pushdown', 'category': 'Triceps'},
-    ];
+        // Chest
+        {'name': 'Bench Press', 'category': 'Chest'},
+        {'name': 'Incline Dumbbell Press', 'category': 'Chest'},
+        {'name': 'Cable Fly', 'category': 'Chest'},
+        {'name': 'Push-ups', 'category': 'Chest'},
+        
+        // Back
+        {'name': 'Pull-ups', 'category': 'Back'},
+        {'name': 'Lat Pulldown', 'category': 'Back'},
+        {'name': 'Barbell Row', 'category': 'Back'},
+        {'name': 'Deadlift', 'category': 'Back'},
+        
+        // Legs
+        {'name': 'Squats', 'category': 'Legs'},
+        {'name': 'Leg Press', 'category': 'Legs'},
+        {'name': 'Romanian Deadlift', 'category': 'Legs'},
+        {'name': 'Calf Raises', 'category': 'Legs'},
+        {'name': 'Leg Extensions', 'category': 'Legs'},
+        
+        // Shoulders
+        {'name': 'Overhead Press', 'category': 'Shoulders'},
+        {'name': 'Lateral Raises', 'category': 'Shoulders'},
+        {'name': 'Face Pulls', 'category': 'Shoulders'},
+        {'name': 'Front Raises', 'category': 'Shoulders'},
+        
+        // Biceps
+        {'name': 'Barbell Curl', 'category': 'Biceps'},
+        {'name': 'Dumbbell Curl', 'category': 'Biceps'},
+        {'name': 'Hammer Curl', 'category': 'Biceps'},
+        {'name': 'Preacher Curl', 'category': 'Biceps'},
+        
+        // Triceps
+        {'name': 'Tricep Pushdown', 'category': 'Triceps'},
+        {'name': 'Overhead Extension', 'category': 'Triceps'},
+        {'name': 'Skullcrushers', 'category': 'Triceps'},
+        {'name': 'Dips', 'category': 'Triceps'},
+      ];
 
     for (var exercise in defaults) {
       await db.insert('exercise_catalog', exercise);

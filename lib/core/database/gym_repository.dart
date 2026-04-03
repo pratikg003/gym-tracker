@@ -326,7 +326,7 @@ class GymRepository {
       'daily_logs',
       {
         'is_rest_day': isRestDay ? 1 : 0,
-      }, // SQLite doesn't have booleans, so we use 1 and 0
+      }, 
       where: 'id = ?',
       whereArgs: [logId],
     );
@@ -401,5 +401,33 @@ class GymRepository {
       where: 'name = ?',
       whereArgs: [name],
     );
+  }
+
+  Future<Map<String, List<String>>> getLoggedExercisesByCategory() async {
+    final db = await _dbHelper.database;
+    
+    // We use a LEFT JOIN. This ensures that even if you logged an exercise 
+    // on Day 2 before we built the catalog, it still shows up (defaulting to 'Custom').
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT DISTINCT w.exercise_name, c.category
+      FROM workout_exercises w
+      LEFT JOIN exercise_catalog c ON w.exercise_name = c.name
+      ORDER BY c.category, w.exercise_name
+    ''');
+
+    Map<String, List<String>> groupedExercises = {};
+    
+    for (var map in maps) {
+      // If category is null (from old logs), put it in 'Custom'
+      String category = map['category'] as String? ?? 'Custom';
+      String name = map['exercise_name'] as String;
+
+      if (!groupedExercises.containsKey(category)) {
+        groupedExercises[category] = [];
+      }
+      groupedExercises[category]!.add(name);
+    }
+    
+    return groupedExercises;
   }
 }

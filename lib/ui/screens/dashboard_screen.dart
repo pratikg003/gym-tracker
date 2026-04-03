@@ -13,7 +13,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   // Default to a common exercise, we will make this dynamic later based on DB
-  String? _selectedExercise = 'Bench Press';
+  String? _selectedCategory;
+  String? _selectedExercise;
 
   @override
   void initState() {
@@ -31,13 +32,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Grab the most recent weight log, defaulting to 65.0 kg if empty
     final currentWeight = provider.currentLog?.bodyWeight ?? 65.0;
 
-    // Placeholder for max lift (we will wire this to a provider method later)
-    final double maxLift = 100.0;
+    // Find the all-time highest 1RM for the selected exercise
+    double maxLift = 0.0;
+    if (provider.progressionHistory.isNotEmpty) {
+      maxLift = provider.progressionHistory
+          .map((log) => log['max_1rm'] as double)
+          .reduce((a, b) => a > b ? a : b);
+    }
 
-    String currentSelection = _selectedExercise ?? 'Bench Press';
-    if (!provider.allLoggedExercises.contains(currentSelection) &&
-        provider.allLoggedExercises.isNotEmpty) {
-      currentSelection = provider.allLoggedExercises.first;
+    // --- SAFE STATE INITIALIZATION ---
+    final groupedExercises = provider.loggedExercisesByCategory;
+
+    // 1. Safely initialize category if empty
+    if (_selectedCategory == null && groupedExercises.isNotEmpty) {
+      _selectedCategory = groupedExercises.keys.first;
+    }
+
+    // 2. Safely initialize exercise based on selected category
+    List<String> currentExercises = groupedExercises[_selectedCategory] ?? [];
+    if (!currentExercises.contains(_selectedExercise) &&
+        currentExercises.isNotEmpty) {
+      _selectedExercise = currentExercises.first;
     }
 
     return Scaffold(
@@ -204,15 +219,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // OUTLINED DROPDOWN
+                    // --- THE DROPDOWNS ---
+                    // 1. MUSCLE GROUP DROPDOWN
+                    const Text(
+                      'Muscle Group',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         color: const Color(0xFF2C2C2C),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.orange,
+                          color: Colors.orange.withValues(alpha: 0.5),
                           width: 1,
-                        ), // Orange accent border
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedCategory,
+                          isExpanded: true,
+                          dropdownColor: const Color(0xFF2C2C2C),
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.orange,
+                          ),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedCategory = newValue;
+                              // CRITICAL: Reset the exercise selection when the group changes!
+                              _selectedExercise = null;
+                            });
+                          },
+                          items: groupedExercises.keys
+                              .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              })
+                              .toList(),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // 2. EXERCISE DROPDOWN
+                    const Text(
+                      'Exercise',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C2C2C),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange, width: 1),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
@@ -232,14 +301,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               _selectedExercise = newValue;
                             });
                           },
-                          items: provider.allLoggedExercises
-                              .map<DropdownMenuItem<String>>((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(value),
-                                );
-                              })
-                              .toList(),
+                          // Map over the exercises specific to the chosen category
+                          items: currentExercises.map<DropdownMenuItem<String>>(
+                            (String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            },
+                          ).toList(),
                         ),
                       ),
                     ),

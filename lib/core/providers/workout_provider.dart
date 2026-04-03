@@ -31,12 +31,9 @@ class WorkoutProvider with ChangeNotifier {
   final Map<String, WorkoutExercise> _pastPerformances = {};
   Map<String, WorkoutExercise> get pastPerformances => _pastPerformances;
 
-  List<String> _allLoggedExercises = [
-    'Bench Press',
-    'Squat',
-    'Deadlift',
-  ]; // Fallback defaults
-  List<String> get allLoggedExercises => _allLoggedExercises;
+  Map<String, List<String>> _loggedExercisesByCategory = {};
+  Map<String, List<String>> get loggedExercisesByCategory =>
+      _loggedExercisesByCategory;
 
   int _weeklyWorkoutCount = 0;
   int get weeklyWorkoutCount => _weeklyWorkoutCount;
@@ -406,11 +403,9 @@ class WorkoutProvider with ChangeNotifier {
   }
 
   Future<void> loadAllLoggedExercises() async {
-    final exercises = await _repository.getUniqueExerciseNames();
-    if (exercises.isNotEmpty) {
-      _allLoggedExercises = exercises;
-      notifyListeners();
-    }
+    _loggedExercisesByCategory = await _repository
+        .getLoggedExercisesByCategory();
+    notifyListeners();
   }
 
   // --- TREND CALCULATORS ---
@@ -429,7 +424,7 @@ class WorkoutProvider with ChangeNotifier {
     if (diff == 0) return 'No change';
 
     String direction = diff > 0 ? '↑' : '↓';
-    
+
     return '$direction ${diff.abs().toStringAsFixed(1)} kg';
   }
 
